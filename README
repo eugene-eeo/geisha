@@ -1,0 +1,10 @@
+geisha
+
+A simple MP3 playing daemon for Linux.
+
+    $ geishad &
+    $ geishac play song.mp3   # play song immediately
+    $ geishac pause
+    $ geishac --idle          # get events from geisha server
+    $ geishac now_playing     # get now playing information
+    $ geishac kill-server     # kill server

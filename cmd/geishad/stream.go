@@ -1,0 +1,74 @@
+package main
+
+import "github.com/faiface/beep"
+import "github.com/faiface/beep/speaker"
+
+type Stream struct {
+	stream  beep.StreamSeeker
+	stopped bool
+	ctrl    *beep.Ctrl
+	stop    func()
+}
+
+func newStream(s beep.StreamSeeker, stop func()) *Stream {
+	ctrl := &beep.Ctrl{Streamer: s}
+	return &Stream{
+		stream:  s,
+		stopped: false,
+		ctrl:    ctrl,
+		stop:    stop,
+	}
+}
+
+func (s *Stream) Toggle() {
+	speaker.Lock()
+	s.ctrl.Paused = !s.ctrl.Paused
+	speaker.Unlock()
+}
+
+func (s *Stream) Pause() {
+	speaker.Lock()
+	s.ctrl.Paused = true
+	speaker.Unlock()
+}
+
+func (s *Stream) Play() {
+	speaker.Lock()
+	s.ctrl.Paused = false
+	speaker.Unlock()
+}
+
+func (s *Stream) Seek(fwd bool) {
+	speaker.Lock()
+	total := s.stream.Len()
+	pos := float64(s.stream.Position()) / float64(total)
+	dir := +0.02
+	if !fwd {
+		dir = -0.02
+	}
+	s.stream.Seek(int((pos + dir) * float64(total)))
+	speaker.Unlock()
+}
+
+func (s *Stream) BeepStream() beep.Streamer {
+	return s.ctrl
+}
+
+func (s *Stream) Paused() bool {
+	return s.ctrl.Paused
+}
+
+func (s *Stream) SeekRaw(i int) {
+	speaker.Lock()
+	s.stream.Seek(i)
+	speaker.Unlock()
+}
+
+func (s *Stream) Teardown() {
+	if !s.stopped {
+		s.stopped = true
+		// this needs to be ran in a goroutine because when we teardown
+		// we send an event to the done channel
+		s.stop()
+	}
+}
