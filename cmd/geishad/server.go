@@ -1,5 +1,6 @@
 package main
 
+import "time"
 import "encoding/json"
 import "bufio"
 import "os"
@@ -9,6 +10,9 @@ import "github.com/eugene-eeo/geisha"
 
 func handleConnection(p *player, conn net.Conn, subs chan func(Event) error) {
 	defer conn.Close()
+	if conn.SetDeadline(time.Now().Add(time.Second*2)) != nil {
+		return
+	}
 	r := bufio.NewReader(conn)
 	e := json.NewEncoder(conn)
 	d := json.NewDecoder(r)
@@ -19,6 +23,7 @@ func handleConnection(p *player, conn net.Conn, subs chan func(Event) error) {
 			break
 		}
 		if req.Method == geisha.METHOD_SUBSCRIBE {
+			// Once we are in subscribe mode, we should never leave subscribe mode.
 			done := make(chan struct{})
 			subs <- func(e Event) error {
 				x := []byte(e)
@@ -26,8 +31,9 @@ func handleConnection(p *player, conn net.Conn, subs chan func(Event) error) {
 				_, err := conn.Write(x)
 				if err != nil {
 					done <- struct{}{}
+					return err
 				}
-				return err
+				return conn.SetDeadline(time.Now().Add(time.Second * 1))
 			}
 			<-done
 			break
@@ -42,12 +48,6 @@ func handleConnection(p *player, conn net.Conn, subs chan func(Event) error) {
 }
 
 func server(p *player) {
-	fmt.Println(geisha.METHOD_GET_STATE)
-	fmt.Println(geisha.METHOD_GET_QUEUE)
-	fmt.Println(geisha.METHOD_SET_QUEUE)
-	fmt.Println(geisha.METHOD_SUBSCRIBE)
-	fmt.Println(geisha.METHOD_CTRL)
-
 	subscribers := make(chan func(Event) error)
 	go func() {
 		subs := [](func(Event) error){}
