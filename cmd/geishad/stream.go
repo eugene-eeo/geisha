@@ -64,11 +64,15 @@ func (s *Stream) SeekRaw(i int) {
 	speaker.Unlock()
 }
 
+func (s *Stream) Progress() float64 {
+	speaker.Lock()
+	defer speaker.Unlock()
+	return float64(s.stream.Position()) / float64(s.stream.Len())
+}
+
 func (s *Stream) Teardown() {
 	if !s.stopped {
 		s.stopped = true
-		// this needs to be ran in a goroutine because when we teardown
-		// we send an event to the done channel
 		s.stop()
 	}
 }

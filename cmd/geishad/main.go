@@ -9,6 +9,7 @@ import "bufio"
 import "os"
 
 type Song string
+type Event string
 type Control int
 
 const (
@@ -21,12 +22,9 @@ const (
 	STOP
 )
 
-type Event struct {
-	Type string
-}
-
 type State struct {
 	NowPlaying Song
+	Progress   float64
 	Queue      []Song
 	Paused     bool
 }
@@ -57,6 +55,12 @@ func play(song Song, done chan bool) (*Stream, error) {
 	return ss, nil
 }
 
+func broadcast_event(evt string, events chan Event) {
+	go func() {
+		events <- Event(evt)
+	}()
+}
+
 // playerloop is meant to be ran in a separate goroutine.
 // It handles playing songs and queuing them.
 func playerloop(
@@ -81,7 +85,7 @@ func playerloop(
 			s, err := play(song, done)
 			// spin until we can play a song without any errors
 			if err == nil {
-				go func() { events <- Event{"SONG_PLAYED"} }()
+				broadcast_event("SONG:PLAY", events)
 				stream = s
 				waiting = false
 				curr = song
@@ -99,43 +103,53 @@ func playerloop(
 				case STOP:
 					stream.SeekRaw(0)
 					stream.Pause()
+					broadcast_event("CTRL:STOP", events)
 				case PLAY:
 					stream.Play()
+					broadcast_event("CTRL:PLAY", events)
 				case PAUSE:
 					stream.Pause()
+					broadcast_event("CTRL:PAUSE", events)
 				case FWD:
 					stream.Seek(true)
+					broadcast_event("CTRL:FWD", events)
 				case BWD:
 					stream.Seek(false)
+					broadcast_event("CTRL:BWD", events)
 				case SKIP:
 					// this needs to be ran in a goroutine because when we teardown
 					// we send an event to the done channel
 					go stream.Teardown()
+					broadcast_event("CTRL:SKIP", events)
 				}
 			}
 			// queue-oriented controls
 			switch c {
 			case CLEAR:
+				broadcast_event("CTRL:CLEAR", events)
 				song_buff = []Song{}
 			}
 		case <-req:
+			f := 0.0
 			p := false
 			m := make([]Song, min(10, len(song_buff)))
 			copy(m, song_buff)
 			if stream != nil {
 				p = stream.Paused()
+				f = stream.Progress()
 			}
 			state <- State{
 				NowPlaying: curr,
+				Progress:   f,
 				Queue:      m,
 				Paused:     p,
 			}
 		case song := <-songs:
 			song_buff = append(song_buff, song)
-			go func() { events <- Event{"SONG_QUEUED"} }()
+			broadcast_event("SONG:QUEUED", events)
 			playNext()
 		case <-done:
-			go func() { events <- Event{"DONE_PLAYING"} }()
+			broadcast_event("SONG:DONE", events)
 			curr = Song("")
 			stream = nil
 			waiting = true
@@ -168,29 +182,23 @@ func main() {
 		default:
 			fmt.Print("g^ ")
 			text, _ := r.ReadString('\n')
-			if text == "state\n" {
+			switch text {
+			case "state\n":
 				req <- struct{}{}
 				fmt.Println(<-state)
-			}
-			if text == "pause\n" {
+			case "pause\n":
 				controls <- PAUSE
-			}
-			if text == "play\n" {
+			case "play\n":
 				controls <- PLAY
-			}
-			if text == "fwd\n" {
+			case "fwd\n":
 				controls <- FWD
-			}
-			if text == "bwd\n" {
+			case "bwd\n":
 				controls <- BWD
-			}
-			if text == "skip\n" {
+			case "skip\n":
 				controls <- SKIP
-			}
-			if text == "stop\n" {
+			case "stop\n":
 				controls <- STOP
-			}
-			if text == "clear\n" {
+			case "clear\n":
 				controls <- CLEAR
 			}
 		}
