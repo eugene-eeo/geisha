@@ -46,6 +46,21 @@ func play(c *cli.Context, r *json.Decoder, w *json.Encoder) (*geisha.Response, e
 	return res, err
 }
 
+func next(c *cli.Context, r *json.Decoder, w *json.Encoder) (*geisha.Response, error) {
+	args := c.Args()
+	if len(args) < 1 {
+		return nil, fmt.Errorf("geishac: next needs song")
+	}
+	song := args[0]
+	res := &geisha.Response{}
+	w.Encode(geisha.Request{
+		Method: geisha.METHOD_NEXT,
+		Args:   []string{song},
+	})
+	err := r.Decode(res)
+	return res, err
+}
+
 func enqueue(c *cli.Context, r *json.Decoder, w *json.Encoder) (*geisha.Response, error) {
 	args := c.Args()
 	if len(args) < 1 {
@@ -100,6 +115,11 @@ func main() {
 			Name:   "play",
 			Usage:  "play song",
 			Action: ipc(play),
+		},
+		{
+			Name:   "next",
+			Usage:  "next song",
+			Action: ipc(next),
 		},
 		{
 			Name:   "enqueue",

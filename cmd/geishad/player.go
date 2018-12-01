@@ -14,7 +14,6 @@ var CTRL_EVENT_MAP = map[geisha.Control]string{
 }
 
 type playerContext struct {
-	songs    chan Song
 	response chan *geisha.Response
 	requests chan *geisha.Request
 	exit     chan struct{}
@@ -33,7 +32,6 @@ type player struct {
 func newPlayer() *player {
 	return &player{
 		context: playerContext{
-			songs:    make(chan Song),
 			response: make(chan *geisha.Response),
 			requests: make(chan *geisha.Request),
 			exit:     make(chan struct{}),
@@ -66,12 +64,6 @@ func (p *player) playNext() {
 			p.curr = song
 		}
 	}
-}
-
-func (p *player) handleNewSong(song Song) {
-	p.queue = append(p.queue, song)
-	p.broadcast("SONG:QUEUED")
-	p.playNext()
 }
 
 func (p *player) handleDone() {
@@ -170,11 +162,19 @@ func (p *player) handleRequest(r *geisha.Request) *geisha.Response {
 			p.playNext()
 		}
 
-	case geisha.METHOD_ENQUEUE:
+	case geisha.METHOD_NEXT:
 		res.Status = geisha.STATUS_ERR
 		if len(r.Args) == 1 {
 			res.Status = geisha.STATUS_OK
 			p.queue = append([]Song{Song(r.Args[0])}, p.queue...)
+			p.playNext()
+		}
+
+	case geisha.METHOD_ENQUEUE:
+		res.Status = geisha.STATUS_ERR
+		if len(r.Args) == 1 {
+			res.Status = geisha.STATUS_OK
+			p.queue = append(p.queue, Song(r.Args[0]))
 			p.playNext()
 		}
 
@@ -189,8 +189,6 @@ func (p *player) loop() {
 		select {
 		case <-p.context.exit:
 			break
-		case song := <-p.context.songs:
-			p.handleNewSong(song)
 		case <-p.done:
 			p.handleDone()
 		case r := <-p.context.requests:
