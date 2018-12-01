@@ -17,7 +17,12 @@ communicate with the server.
 ### TODO
 
  - [ ] `geishac`
- - [x] implement `METHOD_ENQUEUE`
+ - [x] implement `MethodEnqueue`
+ - [ ] `MethodSort`
+ - [ ] `MethodShuffle`
+ - [ ] playback modes:
+   - [ ] `repeat`
+   - [ ] `loop`
  - [ ] clean up `geishad` code
  - [ ] clean up `geishac` code
  - [ ] check for memory leaks
