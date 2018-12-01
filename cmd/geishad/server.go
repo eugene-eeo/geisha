@@ -24,6 +24,7 @@ func handleConnection(p *player, conn net.Conn, subs chan func(Event) error) {
 		}
 		if req.Method == geisha.METHOD_SUBSCRIBE {
 			// Once we are in subscribe mode, we should never leave subscribe mode.
+			conn.SetDeadline(time.Time{})
 			done := make(chan struct{})
 			subs <- func(e Event) error {
 				x := []byte(e)
@@ -31,9 +32,8 @@ func handleConnection(p *player, conn net.Conn, subs chan func(Event) error) {
 				_, err := conn.Write(x)
 				if err != nil {
 					done <- struct{}{}
-					return err
 				}
-				return conn.SetDeadline(time.Now().Add(time.Second * 1))
+				return err
 			}
 			<-done
 			break
@@ -56,7 +56,6 @@ func server(p *player) {
 			case sub := <-subscribers:
 				subs = append(subs, sub)
 			case evt := <-p.context.events:
-				fmt.Println(evt)
 				n := len(subs)
 				for i := n - 1; i >= 0; i-- {
 					if subs[i](evt) != nil {
