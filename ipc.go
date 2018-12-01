@@ -17,18 +17,19 @@ type Response struct {
 }
 
 const (
-	STATUS_OK  Status = 0
-	STATUS_ERR Status = 1
+	StatusOk  Status = 0
+	StatusErr Status = 1
 )
 
 const (
-	METHOD_GET_STATE Method = iota
-	METHOD_GET_QUEUE
-	METHOD_SET_QUEUE
-	METHOD_SUBSCRIBE
-	METHOD_PLAY_SONG
-	METHOD_ENQUEUE
-	METHOD_NEXT
-	METHOD_CTRL
-	METHOD_SHUTDOWN
+	MethodGetState Method = iota
+	MethodGetQueue
+	MethodSubscribe
+	MethodPlaySong
+	MethodEnqueue
+	MethodNext
+	MethodCtrl
+	MethodSort
+	MethodShuffle
+	MethodShutdown
 )

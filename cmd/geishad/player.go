@@ -110,20 +110,20 @@ func (p *player) handleControl(c geisha.Control) {
 
 func (p *player) handleRequest(r *geisha.Request) *geisha.Response {
 	res := &geisha.Response{}
-	res.Status = geisha.STATUS_OK
+	res.Status = geisha.StatusOk
 	// METHOD_SUBSCRIBE should be handled somewhere else
 	switch r.Method {
-	case geisha.METHOD_CTRL:
-		res.Status = geisha.STATUS_ERR
+	case geisha.MethodCtrl:
+		res.Status = geisha.StatusErr
 		if len(r.Args) == 1 {
 			i, err := strconv.Atoi(r.Args[0])
 			if err == nil {
-				res.Status = geisha.STATUS_OK
+				res.Status = geisha.StatusOk
 				p.handleControl(geisha.Control(i))
 			}
 		}
 
-	case geisha.METHOD_GET_STATE:
+	case geisha.MethodGetState:
 		queue := make([]Song, min(10, len(p.queue)))
 		copy(queue, p.queue)
 		paused := false
@@ -139,22 +139,15 @@ func (p *player) handleRequest(r *geisha.Request) *geisha.Response {
 			"current":  p.curr,
 		}
 
-	case geisha.METHOD_GET_QUEUE:
+	case geisha.MethodGetQueue:
 		queue := make([]Song, len(p.queue))
 		copy(queue, p.queue)
 		res.Result = map[string]interface{}{"queue": queue}
 
-	case geisha.METHOD_SET_QUEUE:
-		p.queue = make([]Song, len(r.Args))
-		for i, song := range r.Args {
-			p.queue[i] = Song(song)
-		}
-		p.playNext()
-
-	case geisha.METHOD_PLAY_SONG:
-		res.Status = geisha.STATUS_ERR
+	case geisha.MethodPlaySong:
+		res.Status = geisha.StatusErr
 		if len(r.Args) == 1 {
-			res.Status = geisha.STATUS_OK
+			res.Status = geisha.StatusOk
 			p.queue = append([]Song{Song(r.Args[0])}, p.queue...)
 			if p.stream != nil {
 				go p.stream.Teardown()
@@ -162,23 +155,23 @@ func (p *player) handleRequest(r *geisha.Request) *geisha.Response {
 			p.playNext()
 		}
 
-	case geisha.METHOD_NEXT:
-		res.Status = geisha.STATUS_ERR
+	case geisha.MethodNext:
+		res.Status = geisha.StatusErr
 		if len(r.Args) == 1 {
-			res.Status = geisha.STATUS_OK
+			res.Status = geisha.StatusOk
 			p.queue = append([]Song{Song(r.Args[0])}, p.queue...)
 			p.playNext()
 		}
 
-	case geisha.METHOD_ENQUEUE:
-		res.Status = geisha.STATUS_ERR
+	case geisha.MethodEnqueue:
+		res.Status = geisha.StatusErr
 		if len(r.Args) == 1 {
-			res.Status = geisha.STATUS_OK
+			res.Status = geisha.StatusOk
 			p.queue = append(p.queue, Song(r.Args[0]))
 			p.playNext()
 		}
 
-	case geisha.METHOD_SHUTDOWN:
+	case geisha.MethodShutdown:
 		p.context.exit <- struct{}{}
 	}
 	return res

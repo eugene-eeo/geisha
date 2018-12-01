@@ -23,7 +23,7 @@ func ipc(f func(*cli.Context, *json.Decoder, *json.Encoder) (*geisha.Response, e
 		if err != nil {
 			return err
 		}
-		if res.Status == geisha.STATUS_OK {
+		if res.Status == geisha.StatusOk {
 			os.Exit(0)
 		}
 		os.Exit(1)
@@ -39,7 +39,7 @@ func play(c *cli.Context, r *json.Decoder, w *json.Encoder) (*geisha.Response, e
 	song := args[0]
 	res := &geisha.Response{}
 	w.Encode(geisha.Request{
-		Method: geisha.METHOD_PLAY_SONG,
+		Method: geisha.MethodPlaySong,
 		Args:   []string{song},
 	})
 	err := r.Decode(res)
@@ -54,7 +54,7 @@ func next(c *cli.Context, r *json.Decoder, w *json.Encoder) (*geisha.Response, e
 	song := args[0]
 	res := &geisha.Response{}
 	w.Encode(geisha.Request{
-		Method: geisha.METHOD_NEXT,
+		Method: geisha.MethodNext,
 		Args:   []string{song},
 	})
 	err := r.Decode(res)
@@ -69,7 +69,7 @@ func enqueue(c *cli.Context, r *json.Decoder, w *json.Encoder) (*geisha.Response
 	song := args[0]
 	res := &geisha.Response{}
 	w.Encode(geisha.Request{
-		Method: geisha.METHOD_ENQUEUE,
+		Method: geisha.MethodEnqueue,
 		Args:   []string{song},
 	})
 	err := r.Decode(res)
@@ -79,7 +79,7 @@ func enqueue(c *cli.Context, r *json.Decoder, w *json.Encoder) (*geisha.Response
 func ctrl(ct geisha.Control) func(*cli.Context) error {
 	return ipc(func(c *cli.Context, r *json.Decoder, w *json.Encoder) (*geisha.Response, error) {
 		w.Encode(geisha.Request{
-			Method: geisha.METHOD_CTRL,
+			Method: geisha.MethodCtrl,
 			Args:   []string{strconv.Itoa(int(ct))},
 		})
 		res := &geisha.Response{}
@@ -96,7 +96,7 @@ func sub(c *cli.Context) error {
 	}
 	s := bufio.NewScanner(bufio.NewReader(conn))
 	w := json.NewEncoder(conn)
-	w.Encode(geisha.Request{Method: geisha.METHOD_SUBSCRIBE})
+	w.Encode(geisha.Request{Method: geisha.MethodSubscribe})
 	for s.Scan() {
 		fmt.Println(s.Text())
 	}
