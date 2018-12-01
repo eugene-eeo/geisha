@@ -1,3 +1,4 @@
 build:
 	go build .
-	go build ./cmd/...
+	go build ./cmd/geishad
+	go build ./cmd/geishac

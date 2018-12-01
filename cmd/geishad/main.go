@@ -16,6 +16,13 @@ func min(a, b int) int {
 	return a
 }
 
+func max(a, b int) int {
+	if a > b {
+		return a
+	}
+	return b
+}
+
 func play(song Song, done chan bool) (*Stream, error) {
 	f, err := os.Open(string(song))
 	if err != nil {

@@ -66,7 +66,7 @@ func server(p *player) {
 		}
 	}()
 
-	ln, err := net.Listen("tcp", ":9912")
+	ln, err := net.Listen("tcp", "localhost:9912")
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)

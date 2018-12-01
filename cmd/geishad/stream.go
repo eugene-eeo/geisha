@@ -41,12 +41,13 @@ func (s *Stream) Play() {
 func (s *Stream) Seek(fwd bool) {
 	speaker.Lock()
 	total := s.stream.Len()
-	pos := float64(s.stream.Position()) / float64(total)
+	pcg := float64(s.stream.Position()) / float64(total)
 	dir := +0.02
 	if !fwd {
 		dir = -0.02
 	}
-	s.stream.Seek(int((pos + dir) * float64(total)))
+	pos := int((pcg + dir) * float64(total))
+	s.stream.Seek(max(0, min(pos, total)))
 	speaker.Unlock()
 }
 

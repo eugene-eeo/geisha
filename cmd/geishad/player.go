@@ -1,7 +1,6 @@
 package main
 
 import "strconv"
-import "fmt"
 import "github.com/eugene-eeo/geisha"
 
 var CTRL_EVENT_MAP = map[geisha.Control]string{
@@ -149,18 +148,38 @@ func (p *player) handleRequest(r *geisha.Request) *geisha.Response {
 		}
 
 	case geisha.METHOD_GET_QUEUE:
-		fmt.Println("get_queue")
 		queue := make([]Song, len(p.queue))
 		copy(queue, p.queue)
 		res.Result = map[string]interface{}{"queue": queue}
 
 	case geisha.METHOD_SET_QUEUE:
-		fmt.Println("set_queue")
 		p.queue = make([]Song, len(r.Args))
 		for i, song := range r.Args {
 			p.queue[i] = Song(song)
 		}
 		p.playNext()
+
+	case geisha.METHOD_PLAY_SONG:
+		res.Status = geisha.STATUS_ERR
+		if len(r.Args) == 1 {
+			res.Status = geisha.STATUS_OK
+			p.queue = append([]Song{Song(r.Args[0])}, p.queue...)
+			if p.stream != nil {
+				go p.stream.Teardown()
+			}
+			p.playNext()
+		}
+
+	case geisha.METHOD_ENQUEUE:
+		res.Status = geisha.STATUS_ERR
+		if len(r.Args) == 1 {
+			res.Status = geisha.STATUS_OK
+			p.queue = append([]Song{Song(r.Args[0])}, p.queue...)
+			p.playNext()
+		}
+
+	case geisha.METHOD_SHUTDOWN:
+		p.context.exit <- struct{}{}
 	}
 	return res
 }
