@@ -19,6 +19,13 @@ func (q *queue) len() int {
 	return len(q.q)
 }
 
+func (q *queue) peek() Song {
+	if len(q.q) == 0 {
+		return Song("")
+	}
+	return q.q[q.curr]
+}
+
 func (q *queue) next(repeat, loop bool) Song {
 	n := len(q.q)
 	if n == 0 || (!loop && q.curr == n) {

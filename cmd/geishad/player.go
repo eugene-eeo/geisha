@@ -25,7 +25,6 @@ type player struct {
 	context playerContext
 	stream  *Stream
 	queue   *queue
-	curr    Song
 	done    chan bool
 	loop    bool
 	repeat  bool
@@ -41,7 +40,6 @@ func newPlayer() *player {
 		},
 		stream: nil,
 		queue:  newQueue(),
-		curr:   Song(""),
 		done:   make(chan bool),
 	}
 }
@@ -66,7 +64,6 @@ func (p *player) playNext() {
 		}
 		p.broadcast(geisha.EventSongPlay)
 		p.stream = s
-		p.curr = song
 		break
 	}
 }
@@ -74,7 +71,6 @@ func (p *player) playNext() {
 func (p *player) handleDone() {
 	p.broadcast(geisha.EventSongDone)
 	p.stream = nil
-	p.curr = Song("")
 	p.playNext()
 }
 
@@ -139,7 +135,7 @@ func (p *player) handleRequest(r *geisha.Request) *geisha.Response {
 		res.Result = map[string]interface{}{
 			"paused":   paused,
 			"progress": progress,
-			"current":  p.curr,
+			"current":  p.queue.peek(),
 			"loop":     p.loop,
 			"repeat":   p.repeat,
 		}
