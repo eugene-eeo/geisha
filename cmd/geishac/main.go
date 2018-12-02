@@ -49,6 +49,20 @@ func enqueue(c *cli.Context, ipc *geisha.IPC) (*geisha.Response, error) {
 	return ipc.Request(geisha.MethodEnqueue, []string{args[0]})
 }
 
+func get_state(c *cli.Context, ipc *geisha.IPC) (*geisha.Response, error) {
+	res, err := ipc.Request(geisha.MethodGetState, nil)
+	if err != nil {
+		return res, err
+	}
+	x := res.Result.(map[string]interface{})
+	fmt.Println("current:\t", x["current"].(string))
+	fmt.Println("progress:\t", x["progress"].(float64))
+	fmt.Println("paused:\t", x["paused"].(bool))
+	fmt.Println("loop:\t", x["loop"].(bool))
+	fmt.Println("repeat:\t", x["repeat"].(bool))
+	return res, nil
+}
+
 func get_queue(c *cli.Context, ipc *geisha.IPC) (*geisha.Response, error) {
 	res, err := ipc.Request(geisha.MethodGetQueue, nil)
 	if err != nil {
@@ -180,6 +194,11 @@ func main() {
 			Name:   "loop",
 			Usage:  "toggle loop",
 			Action: meth(geisha.MethodLoop),
+		},
+		{
+			Name:   "get_state",
+			Usage:  "get server state",
+			Action: ipc(get_state),
 		},
 	}
 	sort.Sort(cli.CommandsByName(app.Commands))

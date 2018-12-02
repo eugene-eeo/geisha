@@ -23,7 +23,6 @@ type playerContext struct {
 
 type player struct {
 	context playerContext
-	waiting bool
 	stream  *Stream
 	queue   *queue
 	curr    Song
@@ -40,11 +39,10 @@ func newPlayer() *player {
 			exit:     make(chan struct{}),
 			events:   make(chan geisha.Event),
 		},
-		waiting: true,
-		stream:  nil,
-		queue:   newQueue(),
-		curr:    Song(""),
-		done:    make(chan bool),
+		stream: nil,
+		queue:  newQueue(),
+		curr:   Song(""),
+		done:   make(chan bool),
 	}
 }
 
@@ -55,7 +53,7 @@ func (p *player) broadcast(ev geisha.Event) {
 }
 
 func (p *player) playNext() {
-	for p.waiting {
+	for p.stream == nil {
 		song := p.queue.next(p.repeat, p.loop)
 		if song == Song("") {
 			break
@@ -68,7 +66,6 @@ func (p *player) playNext() {
 		}
 		p.broadcast(geisha.EventSongPlay)
 		p.stream = s
-		p.waiting = false
 		p.curr = song
 		break
 	}
@@ -77,7 +74,6 @@ func (p *player) playNext() {
 func (p *player) handleDone() {
 	p.broadcast(geisha.EventSongDone)
 	p.stream = nil
-	p.waiting = true
 	p.curr = Song("")
 	p.playNext()
 }
@@ -134,8 +130,6 @@ func (p *player) handleRequest(r *geisha.Request) *geisha.Response {
 		}
 
 	case geisha.MethodGetState:
-		queue := make([]Song, min(p.queue.len(), 10))
-		copy(queue, p.queue.q)
 		paused := false
 		progress := 0.0
 		if p.stream != nil {
@@ -143,10 +137,11 @@ func (p *player) handleRequest(r *geisha.Request) *geisha.Response {
 			progress = p.stream.Progress()
 		}
 		res.Result = map[string]interface{}{
-			"queue":    queue,
 			"paused":   paused,
 			"progress": progress,
 			"current":  p.curr,
+			"loop":     p.loop,
+			"repeat":   p.repeat,
 		}
 
 	case geisha.MethodGetQueue:

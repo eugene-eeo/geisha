@@ -10,7 +10,7 @@ type queue struct {
 
 func newQueue() *queue {
 	return &queue{
-		curr: 0,
+		curr: -1,
 		q:    []Song{},
 	}
 }
@@ -24,18 +24,20 @@ func (q *queue) next(repeat, loop bool) Song {
 	if n == 0 || (!loop && q.curr == n) {
 		return Song("")
 	}
-	e := q.q[q.curr%n]
-	if !repeat {
+	if !repeat || q.curr == -1 {
 		q.curr++
 	}
 	if loop {
 		q.curr %= n
 	}
-	return e
+	if q.curr == n {
+		return Song("")
+	}
+	return q.q[q.curr]
 }
 
 func (q *queue) remove() {
-	c := q.curr % len(q.q)
+	c := q.curr
 	q.q = append(q.q[:c], q.q[c+1:]...)
 }
 
