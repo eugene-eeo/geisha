@@ -1,37 +1,61 @@
 package geisha
 
-//import "encoding/json"
+import "bufio"
+import "encoding/json"
+import "errors"
+import "io"
+import "net"
 
-type Status int
-type Method int
-type Result interface{}
+var useSubscribeMethod error = errors.New("IPC.Request: use IPC.Subscribe for MethodSubscribe")
 
-type Request struct {
-	Method Method   `json:"method"`
-	Args   []string `json:"args"`
+type IPC struct {
+	conn io.ReadWriteCloser
+	r    *json.Decoder
+	w    *json.Encoder
 }
 
-type Response struct {
-	Status Status `json:"status"`
-	Result Result `json:"result"`
+func NewDefaultIPC() (*IPC, error) {
+	conn, err := net.Dial("tcp", "localhost:9912")
+	if err != nil {
+		return nil, err
+	}
+	return &IPC{
+		conn: conn,
+		r:    json.NewDecoder(conn),
+		w:    json.NewEncoder(conn),
+	}, nil
 }
 
-const (
-	StatusOk  Status = 0
-	StatusErr Status = 1
-)
+func (i *IPC) Close() error {
+	return i.conn.Close()
+}
 
-const (
-	MethodGetState Method = iota
-	MethodGetQueue
-	MethodSubscribe
-	MethodPlaySong
-	MethodEnqueue
-	MethodNext
-	MethodCtrl
-	MethodSort
-	MethodShuffle
-	MethodLoop
-	MethodRepeat
-	MethodShutdown
-)
+func (i *IPC) Subscribe(f func(Event) error) error {
+	defer i.conn.Close()
+	err := i.w.Encode(Request{Method: MethodSubscribe})
+	if err != nil {
+		return err
+	}
+	r := bufio.NewScanner(i.conn)
+	for r.Scan() {
+		if err := f(Event(r.Text())); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (i *IPC) Request(method Method, args []string) (*Response, error) {
+	res := &Response{}
+	if method == MethodSubscribe {
+		return res, useSubscribeMethod
+	}
+	req := Request{Method: method, Args: args}
+	if err := i.w.Encode(req); err != nil {
+		return res, err
+	}
+	if err := i.r.Decode(res); err != nil {
+		return res, err
+	}
+	return res, nil
+}

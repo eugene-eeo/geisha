@@ -35,7 +35,8 @@ func (q *queue) next(repeat, loop bool) Song {
 }
 
 func (q *queue) remove() {
-	q.q = append(q.q[:q.curr], q.q[q.curr+1:]...)
+	c := q.curr % len(q.q)
+	q.q = append(q.q[:c], q.q[c+1:]...)
 }
 
 func insert(q []Song, i int, x Song) []Song {

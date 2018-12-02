@@ -8,7 +8,9 @@ import "fmt"
 import "net"
 import "github.com/eugene-eeo/geisha"
 
-func handleConnection(p *player, conn net.Conn, subs chan func(geisha.Event) error) {
+type subscriber func(geisha.Event) error
+
+func handleConnection(p *player, conn net.Conn, subs chan subscriber) {
 	defer conn.Close()
 	if conn.SetDeadline(time.Now().Add(time.Second*2)) != nil {
 		return
@@ -20,7 +22,7 @@ func handleConnection(p *player, conn net.Conn, subs chan func(geisha.Event) err
 		req := &geisha.Request{}
 		err := d.Decode(req)
 		if err != nil {
-			break
+			return
 		}
 		if req.Method == geisha.MethodSubscribe {
 			// Once we are in subscribe mode, we should never leave subscribe mode.
@@ -36,7 +38,7 @@ func handleConnection(p *player, conn net.Conn, subs chan func(geisha.Event) err
 				return err
 			}
 			<-done
-			break
+			return
 		} else {
 			p.context.requests <- req
 			res := <-p.context.response
@@ -48,9 +50,9 @@ func handleConnection(p *player, conn net.Conn, subs chan func(geisha.Event) err
 }
 
 func server(p *player) {
-	subscribers := make(chan func(geisha.Event) error)
+	subscribers := make(chan subscriber)
 	go func() {
-		subs := [](func(geisha.Event) error){}
+		subs := []subscriber{}
 		for {
 			select {
 			case sub := <-subscribers:

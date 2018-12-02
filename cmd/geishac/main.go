@@ -1,85 +1,59 @@
 package main
 
-import "bufio"
 import "strconv"
 import "sort"
 import "os"
-import "encoding/json"
 import "fmt"
-import "net"
 import "github.com/eugene-eeo/geisha"
 import "github.com/urfave/cli"
 
-func ipc(f func(*cli.Context, *json.Decoder, *json.Encoder) (*geisha.Response, error)) func(c *cli.Context) error {
+func ipc(f func(*cli.Context, *geisha.IPC) (*geisha.Response, error)) func(c *cli.Context) error {
 	return func(c *cli.Context) error {
-		conn, err := net.Dial("tcp", "localhost:9912")
+		ipc, err := geisha.NewDefaultIPC()
 		if err != nil {
 			return err
 		}
-		defer conn.Close()
-		r := json.NewDecoder(conn)
-		w := json.NewEncoder(conn)
-		res, err := f(c, r, w)
+		defer ipc.Close()
+		res, err := f(c, ipc)
 		if err != nil {
 			return err
 		}
-		if res.Status == geisha.StatusOk {
-			os.Exit(0)
+		if res.Status == geisha.StatusErr {
+			os.Exit(1)
 		}
-		os.Exit(1)
 		return nil
 	}
 }
 
-func play(c *cli.Context, r *json.Decoder, w *json.Encoder) (*geisha.Response, error) {
+func play(c *cli.Context, ipc *geisha.IPC) (*geisha.Response, error) {
 	args := c.Args()
 	if len(args) < 1 {
 		return nil, fmt.Errorf("geishac: play needs song")
 	}
-	song := args[0]
-	res := &geisha.Response{}
-	w.Encode(geisha.Request{
-		Method: geisha.MethodPlaySong,
-		Args:   []string{song},
-	})
-	err := r.Decode(res)
-	return res, err
+	return ipc.Request(geisha.MethodPlaySong, []string{args[0]})
 }
 
-func next(c *cli.Context, r *json.Decoder, w *json.Encoder) (*geisha.Response, error) {
+func next(c *cli.Context, ipc *geisha.IPC) (*geisha.Response, error) {
 	args := c.Args()
 	if len(args) < 1 {
 		return nil, fmt.Errorf("geishac: next needs song")
 	}
-	song := args[0]
-	res := &geisha.Response{}
-	w.Encode(geisha.Request{
-		Method: geisha.MethodNext,
-		Args:   []string{song},
-	})
-	err := r.Decode(res)
-	return res, err
+	return ipc.Request(geisha.MethodNext, []string{args[0]})
 }
 
-func enqueue(c *cli.Context, r *json.Decoder, w *json.Encoder) (*geisha.Response, error) {
+func enqueue(c *cli.Context, ipc *geisha.IPC) (*geisha.Response, error) {
 	args := c.Args()
 	if len(args) < 1 {
 		return nil, fmt.Errorf("geishac: enqueue needs song")
 	}
-	song := args[0]
-	res := &geisha.Response{}
-	w.Encode(geisha.Request{
-		Method: geisha.MethodEnqueue,
-		Args:   []string{song},
-	})
-	err := r.Decode(res)
-	return res, err
+	return ipc.Request(geisha.MethodEnqueue, []string{args[0]})
 }
 
-func get_queue(c *cli.Context, r *json.Decoder, w *json.Encoder) (*geisha.Response, error) {
-	res := &geisha.Response{}
-	w.Encode(geisha.Request{Method: geisha.MethodGetQueue})
-	err := r.Decode(res)
+func get_queue(c *cli.Context, ipc *geisha.IPC) (*geisha.Response, error) {
+	res, err := ipc.Request(geisha.MethodGetQueue, nil)
+	if err != nil {
+		return res, err
+	}
 	x := res.Result.(map[string]interface{})
 	q := x["queue"].([]interface{})
 	i := int(x["curr"].(float64))
@@ -94,39 +68,29 @@ func get_queue(c *cli.Context, r *json.Decoder, w *json.Encoder) (*geisha.Respon
 }
 
 func meth(m geisha.Method) func(*cli.Context) error {
-	return ipc(func(c *cli.Context, r *json.Decoder, w *json.Encoder) (*geisha.Response, error) {
-		w.Encode(geisha.Request{Method: m})
-		res := &geisha.Response{}
-		err := r.Decode(res)
-		return res, err
+	return ipc(func(c *cli.Context, ipc *geisha.IPC) (*geisha.Response, error) {
+		return ipc.Request(m, nil)
 	})
 }
 
 func ctrl(ct geisha.Control) func(*cli.Context) error {
-	return ipc(func(c *cli.Context, r *json.Decoder, w *json.Encoder) (*geisha.Response, error) {
-		w.Encode(geisha.Request{
-			Method: geisha.MethodCtrl,
-			Args:   []string{strconv.Itoa(int(ct))},
+	return ipc(func(c *cli.Context, ipc *geisha.IPC) (*geisha.Response, error) {
+		return ipc.Request(geisha.MethodCtrl, []string{
+			strconv.Itoa(int(ct)),
 		})
-		res := &geisha.Response{}
-		err := r.Decode(res)
-		return res, err
 	})
 }
 
 func sub(c *cli.Context) error {
-	conn, err := net.Dial("tcp", "localhost:9912")
-	defer conn.Close()
+	ipc, err := geisha.NewDefaultIPC()
+	defer ipc.Close()
 	if err != nil {
 		return err
 	}
-	s := bufio.NewScanner(bufio.NewReader(conn))
-	w := json.NewEncoder(conn)
-	w.Encode(geisha.Request{Method: geisha.MethodSubscribe})
-	for s.Scan() {
-		fmt.Println(s.Text())
-	}
-	return s.Err()
+	return ipc.Subscribe(func(evt geisha.Event) error {
+		fmt.Println(evt)
+		return nil
+	})
 }
 
 func main() {

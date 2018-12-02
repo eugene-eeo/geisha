@@ -24,6 +24,6 @@ communicate with the server.
    - [x] `repeat`
    - [x] `loop`
  - [ ] clean up `geishad` code
- - [ ] clean up `geishac` code
+ - [ ] clean up `geishac` code (PLEASE)
  - [ ] check for memory leaks
  - [ ] tests (lol)
