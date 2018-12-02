@@ -1,4 +1,4 @@
-# geisha
+# geisha (芸者)
 
 A simple MP3 playing daemon for Linux or OSX.
 
