@@ -7,7 +7,7 @@ A simple MP3 playing daemon for Linux or OSX.
     $ geishac queue song2.mp3 # play after song.mp3
     $ geishac pause
     $ geishac sub             # get events from geisha server
-    $ geishac now_playing     # get now playing information
+    $ geishac get_state       # get server state
     $ geishac shutdown        # shutdown server
 
 Similar architecture to `herbstluftwm` - there is a server process
