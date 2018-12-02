@@ -55,6 +55,7 @@ const (
 	EventCtrlFwd    = Event("ctrl:fwd")
 	EventCtrlBwd    = Event("ctrl:bwd")
 	EventCtrlSkip   = Event("ctrl:skip")
+	EventCtrlPrev   = Event("ctrl:prev")
 	EventCtrlStop   = Event("ctrl:stop")
 	EventCtrlClear  = Event("ctrl:clear")
 	EventCtrlToggle = Event("ctrl:toggle")

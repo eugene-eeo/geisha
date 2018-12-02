@@ -35,6 +35,7 @@ Long term plan would be to have a suite of tools including:
    - [x] `loop`
  - [ ] stable queue shuffle + sort
  - [ ] `MethodRemove`
+ - [ ] more efficient streaming-friendly IPC (no json)
  - [ ] event details
  - [ ] clean up `geishad` code
  - [ ] clean up `geishac` code (PLEASE)

@@ -8,6 +8,7 @@ var CTRL_EVENT_MAP = map[geisha.Control]geisha.Event{
 	geisha.PLAY:   geisha.EventCtrlPlay,
 	geisha.FWD:    geisha.EventCtrlFwd,
 	geisha.BWD:    geisha.EventCtrlBwd,
+	geisha.PREV:   geisha.EventCtrlPrev,
 	geisha.SKIP:   geisha.EventCtrlSkip,
 	geisha.STOP:   geisha.EventCtrlStop,
 	geisha.CLEAR:  geisha.EventCtrlClear,
