@@ -25,9 +25,7 @@ type player struct {
 	context playerContext
 	stream  *Stream
 	queue   *queue
-	done    chan bool
-	loop    bool
-	repeat  bool
+	done    chan int
 }
 
 func newPlayer() *player {
@@ -39,8 +37,8 @@ func newPlayer() *player {
 			events:   make(chan geisha.Event),
 		},
 		stream: nil,
-		queue:  newQueue(),
-		done:   make(chan bool),
+		queue:  newQueue(false, false),
+		done:   make(chan int),
 	}
 }
 
@@ -50,16 +48,16 @@ func (p *player) broadcast(ev geisha.Event) {
 	}()
 }
 
-func (p *player) playNext() {
+func (p *player) play() {
 	for p.stream == nil {
-		song := p.queue.next(p.repeat, p.loop)
+		song := p.queue.current()
 		if song == Song("") {
 			break
 		}
 		// spin until we can play a song without any errors
 		s, err := play(song, p.done)
 		if err != nil {
-			p.queue.remove()
+			p.queue.remove(p.queue.curr)
 			continue
 		}
 		p.broadcast(geisha.EventSongPlay)
@@ -68,10 +66,18 @@ func (p *player) playNext() {
 	}
 }
 
-func (p *player) handleDone() {
+func (p *player) handleDone(i int) {
 	p.broadcast(geisha.EventSongDone)
 	p.stream = nil
-	p.playNext()
+	switch i {
+	case -1:
+		p.queue.next(-1, true)
+	case +1:
+		p.queue.next(1, true)
+	case 0:
+		p.queue.next(1, false)
+	}
+	p.play()
 }
 
 func (p *player) broadcastControl(c geisha.Control) {
@@ -97,15 +103,26 @@ func (p *player) handleControl(c geisha.Control) {
 			p.stream.Seek(false)
 		case geisha.TOGGLE:
 			p.stream.Toggle()
-		case geisha.SKIP:
+		case geisha.PREV:
 			// this needs to be ran in a goroutine because when we teardown
 			// we send an event to p.done
-			go p.stream.Teardown()
+			go p.stream.Teardown(-1)
+		case geisha.SKIP:
+			go p.stream.Teardown(1)
+		}
+	} else {
+		switch c {
+		case geisha.PREV:
+			p.queue.next(-1, true)
+			p.play()
+		case geisha.SKIP:
+			p.queue.next(1, true)
+			p.play()
 		}
 	}
 	switch c {
 	case geisha.CLEAR:
-		p.queue = newQueue()
+		p.queue = newQueue(p.queue.loop, p.queue.repeat)
 	}
 	p.broadcastControl(c)
 }
@@ -127,25 +144,31 @@ func (p *player) handleRequest(r *geisha.Request) *geisha.Response {
 
 	case geisha.MethodGetState:
 		paused := false
+		current := Song("")
 		progress := 0.0
 		if p.stream != nil {
 			paused = p.stream.Paused()
 			progress = p.stream.Progress()
+			current = p.queue.current()
 		}
 		res.Result = map[string]interface{}{
 			"paused":   paused,
 			"progress": progress,
-			"current":  p.queue.peek(),
-			"loop":     p.loop,
-			"repeat":   p.repeat,
+			"current":  current,
+			"loop":     p.queue.loop,
+			"repeat":   p.queue.repeat,
 		}
 
 	case geisha.MethodGetQueue:
+		curr := -1
+		if p.stream != nil {
+			curr = p.queue.curr
+		}
 		queue := make([]Song, p.queue.len())
 		copy(queue, p.queue.q)
 		res.Result = map[string]interface{}{
 			"queue": queue,
-			"curr":  p.queue.curr,
+			"curr":  curr,
 		}
 
 	case geisha.MethodPlaySong:
@@ -153,11 +176,13 @@ func (p *player) handleRequest(r *geisha.Request) *geisha.Response {
 		if len(r.Args) == 1 {
 			p.broadcast(geisha.EventQueueChange)
 			res.Status = geisha.StatusOk
-			p.queue.append(Song(r.Args[0]))
-			if p.stream != nil {
-				go p.stream.Teardown()
-			}
-			p.playNext()
+			p.queue.insert(p.queue.curr, Song(r.Args[0]))
+			go func() {
+				if p.stream != nil {
+					p.stream.Teardown(1)
+				}
+				p.play()
+			}()
 		}
 
 	case geisha.MethodNext:
@@ -165,8 +190,8 @@ func (p *player) handleRequest(r *geisha.Request) *geisha.Response {
 		if len(r.Args) == 1 {
 			p.broadcast(geisha.EventQueueChange)
 			res.Status = geisha.StatusOk
-			p.queue.prepend(Song(r.Args[0]))
-			p.playNext()
+			p.queue.insert(p.queue.curr, Song(r.Args[0]))
+			p.play()
 		}
 
 	case geisha.MethodEnqueue:
@@ -175,18 +200,18 @@ func (p *player) handleRequest(r *geisha.Request) *geisha.Response {
 			p.broadcast(geisha.EventQueueChange)
 			res.Status = geisha.StatusOk
 			p.queue.append(Song(r.Args[0]))
-			p.playNext()
+			p.play()
 		}
 
 	case geisha.MethodRepeat:
 		p.broadcast(geisha.EventModeChange)
-		p.repeat = !p.repeat
-		p.playNext()
+		p.queue.repeat = !p.queue.repeat
+		p.play()
 
 	case geisha.MethodLoop:
 		p.broadcast(geisha.EventModeChange)
-		p.loop = !p.loop
-		p.playNext()
+		p.queue.loop = !p.queue.loop
+		p.play()
 
 	case geisha.MethodSort:
 		p.broadcast(geisha.EventQueueChange)
@@ -207,8 +232,8 @@ func (p *player) listen() {
 		select {
 		case <-p.context.exit:
 			break
-		case <-p.done:
-			p.handleDone()
+		case i := <-p.done:
+			p.handleDone(i)
 		case r := <-p.context.requests:
 			p.context.response <- p.handleRequest(r)
 		}

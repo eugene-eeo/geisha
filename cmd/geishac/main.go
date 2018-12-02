@@ -161,6 +161,11 @@ func main() {
 			Action: ctrl(geisha.STOP),
 		},
 		{
+			Name:   "prev",
+			Usage:  "prev",
+			Action: ctrl(geisha.PREV),
+		},
+		{
 			Name:   "skip",
 			Usage:  "skip",
 			Action: ctrl(geisha.SKIP),

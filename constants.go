@@ -28,6 +28,7 @@ const (
 	CLEAR
 	FWD
 	BWD
+	PREV
 	SKIP
 	STOP
 )

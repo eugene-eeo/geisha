@@ -22,7 +22,7 @@ func max(a, b int) int {
 	return b
 }
 
-func play(song Song, done chan bool) (*Stream, error) {
+func play(song Song, done chan int) (*Stream, error) {
 	f, err := os.Open(string(song))
 	if err != nil {
 		return nil, err
@@ -31,13 +31,15 @@ func play(song Song, done chan bool) (*Stream, error) {
 	if err != nil {
 		return nil, err
 	}
-	ss := newStream(stream, func() {
+	ss := newStream(stream, func(i int) {
 		_ = f.Close()
 		_ = stream.Close()
-		done <- true
+		done <- i
 	})
 	speaker.Init(format.SampleRate, format.SampleRate.N(time.Second/5))
-	speaker.Play(beep.Seq(ss.BeepStream(), beep.Callback(ss.Teardown)))
+	speaker.Play(beep.Seq(ss.BeepStream(), beep.Callback(func() {
+		ss.Teardown(0)
+	})))
 	return ss, nil
 }
 
