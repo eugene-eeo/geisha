@@ -31,5 +31,7 @@ const (
 	MethodCtrl
 	MethodSort
 	MethodShuffle
+	MethodLoop
+	MethodRepeat
 	MethodShutdown
 )

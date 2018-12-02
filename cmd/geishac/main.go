@@ -76,6 +76,32 @@ func enqueue(c *cli.Context, r *json.Decoder, w *json.Encoder) (*geisha.Response
 	return res, err
 }
 
+func get_queue(c *cli.Context, r *json.Decoder, w *json.Encoder) (*geisha.Response, error) {
+	res := &geisha.Response{}
+	w.Encode(geisha.Request{Method: geisha.MethodGetQueue})
+	err := r.Decode(res)
+	x := res.Result.(map[string]interface{})
+	q := x["queue"].([]interface{})
+	i := int(x["curr"].(float64))
+	for j, song := range q {
+		f := ""
+		if i == j {
+			f = "*"
+		}
+		fmt.Println(f, "\t", song.(string))
+	}
+	return res, err
+}
+
+func meth(m geisha.Method) func(*cli.Context) error {
+	return ipc(func(c *cli.Context, r *json.Decoder, w *json.Encoder) (*geisha.Response, error) {
+		w.Encode(geisha.Request{Method: m})
+		res := &geisha.Response{}
+		err := r.Decode(res)
+		return res, err
+	})
+}
+
 func ctrl(ct geisha.Control) func(*cli.Context) error {
 	return ipc(func(c *cli.Context, r *json.Decoder, w *json.Encoder) (*geisha.Response, error) {
 		w.Encode(geisha.Request{
@@ -110,6 +136,11 @@ func main() {
 			Name:   "sub",
 			Usage:  "subscribe to events",
 			Action: sub,
+		},
+		{
+			Name:   "get_queue",
+			Usage:  "get queue",
+			Action: ipc(get_queue),
 		},
 		{
 			Name:   "play",
@@ -155,6 +186,36 @@ func main() {
 			Name:   "skip",
 			Usage:  "skip",
 			Action: ctrl(geisha.SKIP),
+		},
+		{
+			Name:   "toggle",
+			Usage:  "toggle",
+			Action: ctrl(geisha.TOGGLE),
+		},
+		{
+			Name:   "clear",
+			Usage:  "clear",
+			Action: ctrl(geisha.CLEAR),
+		},
+		{
+			Name:   "shuffle",
+			Usage:  "shuffle queue",
+			Action: meth(geisha.MethodShuffle),
+		},
+		{
+			Name:   "repeat",
+			Usage:  "toggle repeat",
+			Action: meth(geisha.MethodRepeat),
+		},
+		{
+			Name:   "sort",
+			Usage:  "sort queue",
+			Action: meth(geisha.MethodSort),
+		},
+		{
+			Name:   "loop",
+			Usage:  "toggle loop",
+			Action: meth(geisha.MethodLoop),
 		},
 	}
 	sort.Sort(cli.CommandsByName(app.Commands))

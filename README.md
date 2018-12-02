@@ -18,11 +18,11 @@ communicate with the server.
 
  - [ ] `geishac`
  - [x] implement `MethodEnqueue`
- - [ ] `MethodSort`
- - [ ] `MethodShuffle`
- - [ ] playback modes:
-   - [ ] `repeat`
-   - [ ] `loop`
+ - [x] `MethodSort`
+ - [x] `MethodShuffle`
+ - [x] playback modes:
+   - [x] `repeat`
+   - [x] `loop`
  - [ ] clean up `geishad` code
  - [ ] clean up `geishac` code
  - [ ] check for memory leaks

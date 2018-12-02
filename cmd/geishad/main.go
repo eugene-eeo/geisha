@@ -7,7 +7,6 @@ import "github.com/faiface/beep/mp3"
 import "github.com/faiface/beep/speaker"
 
 type Song string
-type Event string
 
 func min(a, b int) int {
 	if a > b {
@@ -44,6 +43,6 @@ func play(song Song, done chan bool) (*Stream, error) {
 
 func main() {
 	p := newPlayer()
-	go p.loop()
+	go p.listen()
 	server(p)
 }

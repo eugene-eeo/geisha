@@ -3,30 +3,33 @@ package main
 import "strconv"
 import "github.com/eugene-eeo/geisha"
 
-var CTRL_EVENT_MAP = map[geisha.Control]string{
-	geisha.PAUSE: "CTRL:PAUSE",
-	geisha.PLAY:  "CTRL:PLAY",
-	geisha.FWD:   "CTRL:FWD",
-	geisha.BWD:   "CTRL:BWD",
-	geisha.SKIP:  "CTRL:SKIP",
-	geisha.STOP:  "CTRL:STOP",
-	geisha.CLEAR: "CTRL:CLEAR",
+var CTRL_EVENT_MAP = map[geisha.Control]geisha.Event{
+	geisha.PAUSE:  geisha.EventCtrlPause,
+	geisha.PLAY:   geisha.EventCtrlPlay,
+	geisha.FWD:    geisha.EventCtrlFwd,
+	geisha.BWD:    geisha.EventCtrlBwd,
+	geisha.SKIP:   geisha.EventCtrlSkip,
+	geisha.STOP:   geisha.EventCtrlStop,
+	geisha.CLEAR:  geisha.EventCtrlClear,
+	geisha.TOGGLE: geisha.EventCtrlToggle,
 }
 
 type playerContext struct {
 	response chan *geisha.Response
 	requests chan *geisha.Request
 	exit     chan struct{}
-	events   chan Event
+	events   chan geisha.Event
 }
 
 type player struct {
 	context playerContext
 	waiting bool
 	stream  *Stream
-	queue   []Song
+	queue   *queue
 	curr    Song
 	done    chan bool
+	loop    bool
+	repeat  bool
 }
 
 func newPlayer() *player {
@@ -35,39 +38,44 @@ func newPlayer() *player {
 			response: make(chan *geisha.Response),
 			requests: make(chan *geisha.Request),
 			exit:     make(chan struct{}),
-			events:   make(chan Event),
+			events:   make(chan geisha.Event),
 		},
 		waiting: true,
 		stream:  nil,
-		queue:   []Song{},
+		queue:   newQueue(),
 		curr:    Song(""),
 		done:    make(chan bool),
 	}
 }
 
-func (p *player) broadcast(ev string) {
+func (p *player) broadcast(ev geisha.Event) {
 	go func() {
-		p.context.events <- Event(ev)
+		p.context.events <- ev
 	}()
 }
 
 func (p *player) playNext() {
-	for p.waiting && len(p.queue) > 0 {
-		song := p.queue[0]
-		p.queue = p.queue[1:]
-		s, err := play(song, p.done)
-		// spin until we can play a song without any errors
-		if err == nil {
-			p.broadcast("SONG:PLAY")
-			p.stream = s
-			p.waiting = false
-			p.curr = song
+	for p.waiting {
+		song := p.queue.next(p.repeat, p.loop)
+		if song == Song("") {
+			break
 		}
+		// spin until we can play a song without any errors
+		s, err := play(song, p.done)
+		if err != nil {
+			p.queue.remove()
+			continue
+		}
+		p.broadcast(geisha.EventSongPlay)
+		p.stream = s
+		p.waiting = false
+		p.curr = song
+		break
 	}
 }
 
 func (p *player) handleDone() {
-	p.broadcast("SONG:DONE")
+	p.broadcast(geisha.EventSongDone)
 	p.stream = nil
 	p.waiting = true
 	p.curr = Song("")
@@ -95,6 +103,8 @@ func (p *player) handleControl(c geisha.Control) {
 			p.stream.Seek(true)
 		case geisha.BWD:
 			p.stream.Seek(false)
+		case geisha.TOGGLE:
+			p.stream.Toggle()
 		case geisha.SKIP:
 			// this needs to be ran in a goroutine because when we teardown
 			// we send an event to p.done
@@ -103,7 +113,7 @@ func (p *player) handleControl(c geisha.Control) {
 	}
 	switch c {
 	case geisha.CLEAR:
-		p.queue = []Song{}
+		p.queue = newQueue()
 	}
 	p.broadcastControl(c)
 }
@@ -111,7 +121,7 @@ func (p *player) handleControl(c geisha.Control) {
 func (p *player) handleRequest(r *geisha.Request) *geisha.Response {
 	res := &geisha.Response{}
 	res.Status = geisha.StatusOk
-	// METHOD_SUBSCRIBE should be handled somewhere else
+	// MethodSubscribe should be handled somewhere else
 	switch r.Method {
 	case geisha.MethodCtrl:
 		res.Status = geisha.StatusErr
@@ -124,8 +134,8 @@ func (p *player) handleRequest(r *geisha.Request) *geisha.Response {
 		}
 
 	case geisha.MethodGetState:
-		queue := make([]Song, min(10, len(p.queue)))
-		copy(queue, p.queue)
+		queue := make([]Song, min(p.queue.len(), 10))
+		copy(queue, p.queue.q)
 		paused := false
 		progress := 0.0
 		if p.stream != nil {
@@ -140,15 +150,19 @@ func (p *player) handleRequest(r *geisha.Request) *geisha.Response {
 		}
 
 	case geisha.MethodGetQueue:
-		queue := make([]Song, len(p.queue))
-		copy(queue, p.queue)
-		res.Result = map[string]interface{}{"queue": queue}
+		queue := make([]Song, p.queue.len())
+		copy(queue, p.queue.q)
+		res.Result = map[string]interface{}{
+			"queue": queue,
+			"curr":  p.queue.curr,
+		}
 
 	case geisha.MethodPlaySong:
 		res.Status = geisha.StatusErr
 		if len(r.Args) == 1 {
+			p.broadcast(geisha.EventQueueChange)
 			res.Status = geisha.StatusOk
-			p.queue = append([]Song{Song(r.Args[0])}, p.queue...)
+			p.queue.append(Song(r.Args[0]))
 			if p.stream != nil {
 				go p.stream.Teardown()
 			}
@@ -158,26 +172,46 @@ func (p *player) handleRequest(r *geisha.Request) *geisha.Response {
 	case geisha.MethodNext:
 		res.Status = geisha.StatusErr
 		if len(r.Args) == 1 {
+			p.broadcast(geisha.EventQueueChange)
 			res.Status = geisha.StatusOk
-			p.queue = append([]Song{Song(r.Args[0])}, p.queue...)
+			p.queue.prepend(Song(r.Args[0]))
 			p.playNext()
 		}
 
 	case geisha.MethodEnqueue:
 		res.Status = geisha.StatusErr
 		if len(r.Args) == 1 {
+			p.broadcast(geisha.EventQueueChange)
 			res.Status = geisha.StatusOk
-			p.queue = append(p.queue, Song(r.Args[0]))
+			p.queue.append(Song(r.Args[0]))
 			p.playNext()
 		}
 
+	case geisha.MethodRepeat:
+		p.broadcast(geisha.EventModeChange)
+		p.repeat = !p.repeat
+		p.playNext()
+
+	case geisha.MethodLoop:
+		p.broadcast(geisha.EventModeChange)
+		p.loop = !p.loop
+		p.playNext()
+
+	case geisha.MethodSort:
+		p.broadcast(geisha.EventQueueChange)
+		p.queue.sort()
+
+	case geisha.MethodShuffle:
+		p.broadcast(geisha.EventQueueChange)
+		p.queue.shuffle()
+
 	case geisha.MethodShutdown:
-		p.context.exit <- struct{}{}
+		go func() { p.context.exit <- struct{}{} }()
 	}
 	return res
 }
 
-func (p *player) loop() {
+func (p *player) listen() {
 	for {
 		select {
 		case <-p.context.exit:
