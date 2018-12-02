@@ -178,12 +178,9 @@ func (p *player) handleRequest(r *geisha.Request) *geisha.Response {
 			p.broadcast(geisha.EventQueueChange)
 			res.Status = geisha.StatusOk
 			p.queue.insert(p.queue.curr, Song(r.Args[0]))
-			go func() {
-				if p.stream != nil {
-					p.stream.Teardown(1)
-				}
-				p.play()
-			}()
+			if p.stream != nil {
+				go p.stream.Teardown(1)
+			}
 		}
 
 	case geisha.MethodNext:
