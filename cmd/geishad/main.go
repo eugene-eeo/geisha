@@ -36,7 +36,7 @@ func play(song Song, done chan bool) (*Stream, error) {
 		_ = stream.Close()
 		done <- true
 	})
-	speaker.Init(format.SampleRate, format.SampleRate.N(time.Second/10))
+	speaker.Init(format.SampleRate, format.SampleRate.N(time.Second/5))
 	speaker.Play(beep.Seq(ss.BeepStream(), beep.Callback(ss.Teardown)))
 	return ss, nil
 }
