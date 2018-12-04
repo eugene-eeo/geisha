@@ -36,6 +36,13 @@ Long term plan would be to have a suite of tools including:
  - [ ] stable queue shuffle + sort
  - [ ] `MethodRemove`
  - [ ] more efficient streaming-friendly IPC (no json)
+   - format idea:
+     ```
+     M{method-id}
+     A{arg}
+     A{arg}
+     E
+     ```
  - [ ] event details
  - [ ] clean up `geishad` code
  - [ ] clean up `geishac` code (PLEASE)
