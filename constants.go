@@ -25,7 +25,6 @@ const (
 	PLAY Control = iota
 	PAUSE
 	TOGGLE
-	CLEAR
 	FWD
 	BWD
 	PREV
@@ -45,6 +44,7 @@ const (
 	MethodShuffle
 	MethodLoop
 	MethodRepeat
+	MethodClear
 	MethodShutdown
 )
 
@@ -57,7 +57,6 @@ const (
 	EventCtrlSkip   = Event("ctrl:skip")
 	EventCtrlPrev   = Event("ctrl:prev")
 	EventCtrlStop   = Event("ctrl:stop")
-	EventCtrlClear  = Event("ctrl:clear")
 	EventCtrlToggle = Event("ctrl:toggle")
 	// Playback Mode
 	EventModeChange = Event("mode:change")

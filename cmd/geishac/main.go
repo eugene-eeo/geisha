@@ -178,7 +178,7 @@ func main() {
 		{
 			Name:   "clear",
 			Usage:  "clear",
-			Action: ctrl(geisha.CLEAR),
+			Action: meth(geisha.MethodClear),
 		},
 		{
 			Name:   "shuffle",

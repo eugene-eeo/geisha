@@ -11,7 +11,6 @@ var CTRL_EVENT_MAP = map[geisha.Control]geisha.Event{
 	geisha.PREV:   geisha.EventCtrlPrev,
 	geisha.SKIP:   geisha.EventCtrlSkip,
 	geisha.STOP:   geisha.EventCtrlStop,
-	geisha.CLEAR:  geisha.EventCtrlClear,
 	geisha.TOGGLE: geisha.EventCtrlToggle,
 }
 
@@ -81,7 +80,7 @@ func (p *player) handleDone(i int) {
 	p.play()
 }
 
-func (p *player) broadcastControl(c geisha.Control) {
+func (p *player) broadcastControlEvent(c geisha.Control) {
 	ev, ok := CTRL_EVENT_MAP[c]
 	if ok {
 		p.broadcast(ev)
@@ -121,11 +120,7 @@ func (p *player) handleControl(c geisha.Control) {
 			p.play()
 		}
 	}
-	switch c {
-	case geisha.CLEAR:
-		p.queue = newQueue(p.queue.loop, p.queue.repeat)
-	}
-	p.broadcastControl(c)
+	p.broadcastControlEvent(c)
 }
 
 func (p *player) handleRequest(r *geisha.Request) *geisha.Response {
@@ -142,6 +137,10 @@ func (p *player) handleRequest(r *geisha.Request) *geisha.Response {
 				p.handleControl(geisha.Control(i))
 			}
 		}
+
+	case geisha.MethodClear:
+		p.queue = newQueue(p.queue.loop, p.queue.repeat)
+		p.broadcast(geisha.EventQueueChange)
 
 	case geisha.MethodGetState:
 		paused := false
