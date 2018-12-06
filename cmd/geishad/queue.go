@@ -56,6 +56,7 @@ func (q *queue) next(i int, force bool) {
 }
 
 func (q *queue) remove(i int) {
+	// so that future calls to next(1) wraps around properly
 	if q.curr == len(q.q) {
 		q.curr--
 	}
@@ -80,9 +81,6 @@ func (q *queue) append(x Song) {
 }
 
 func (q *queue) sort() {
-	if len(q.q) == 0 {
-		return
-	}
 	sort.Slice(q.q, func(i, j int) bool {
 		swap := q.q[i] < q.q[j]
 		if swap {
@@ -97,9 +95,6 @@ func (q *queue) sort() {
 }
 
 func (q *queue) shuffle() {
-	if len(q.q) == 0 {
-		return
-	}
 	rand.Shuffle(len(q.q), func(i, j int) {
 		q.q[i], q.q[j] = q.q[j], q.q[i]
 		if i == q.curr {
