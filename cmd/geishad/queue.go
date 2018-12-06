@@ -44,16 +44,13 @@ func (q *queue) next(i int, force bool) {
 	if n == 0 {
 		return
 	}
-	if force {
-		q.curr = mod(q.curr+i, n)
-		return
-	}
-	if !q.repeat {
-		c := q.curr + i
-		if (0 <= c && c < n) || q.loop {
-			q.curr = mod(c, n)
-		} else {
-			q.curr = c
+	if !q.repeat || force {
+		q.curr += i
+		// only mod if we are in loop mode or we are forced to.
+		// that way if q.curr goes out of bounds then we know we
+		// have to return empty songs (we've exhaused the queue).
+		if q.loop || force {
+			q.curr = mod(q.curr, n)
 		}
 	}
 }
