@@ -7,10 +7,10 @@ type Stream struct {
 	stream  beep.StreamSeeker
 	stopped bool
 	ctrl    *beep.Ctrl
-	stop    func(int)
+	stop    func(nextControl)
 }
 
-func newStream(s beep.StreamSeeker, stop func(int)) *Stream {
+func newStream(s beep.StreamSeeker, stop func(nextControl)) *Stream {
 	ctrl := &beep.Ctrl{Streamer: s}
 	return &Stream{
 		stream:  s,
@@ -71,7 +71,7 @@ func (s *Stream) Progress() float64 {
 	return float64(s.stream.Position()) / float64(s.stream.Len())
 }
 
-func (s *Stream) Teardown(b int) {
+func (s *Stream) Teardown(b nextControl) {
 	if !s.stopped {
 		s.stopped = true
 		s.stop(b)

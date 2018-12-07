@@ -14,6 +14,15 @@ var CTRL_EVENT_MAP = map[geisha.Control]geisha.Event{
 	geisha.TOGGLE: geisha.EventCtrlToggle,
 }
 
+type nextControl int
+
+const (
+	nextNatural nextControl = iota
+	nextSkip
+	nextPrev
+	nextNoop
+)
+
 type playerContext struct {
 	response chan *geisha.Response
 	requests chan *geisha.Request
@@ -25,7 +34,7 @@ type player struct {
 	context playerContext
 	stream  *Stream
 	queue   *queue
-	done    chan int
+	done    chan nextControl
 }
 
 func newPlayer() *player {
@@ -38,7 +47,7 @@ func newPlayer() *player {
 		},
 		stream: nil,
 		queue:  newQueue(false, false),
-		done:   make(chan int),
+		done:   make(chan nextControl),
 	}
 }
 
@@ -66,17 +75,17 @@ func (p *player) play() {
 	}
 }
 
-func (p *player) handleDone(i int) {
+func (p *player) handleDone(i nextControl) {
 	p.broadcast(geisha.EventSongDone)
 	p.stream = nil
 	switch i {
-	case -1:
+	case nextPrev:
 		p.queue.next(-1, true)
-	case +1:
+	case nextSkip:
 		p.queue.next(1, true)
-	case 0:
+	case nextNatural:
 		p.queue.next(1, false)
-	case 2: // explicitly ignore 2
+	case nextNoop:
 	}
 	p.play()
 }
@@ -107,9 +116,9 @@ func (p *player) handleControl(c geisha.Control) {
 		case geisha.PREV:
 			// this needs to be ran in a goroutine because when we teardown
 			// we send an event to p.done
-			go p.stream.Teardown(-1)
+			go p.stream.Teardown(nextPrev)
 		case geisha.SKIP:
-			go p.stream.Teardown(1)
+			go p.stream.Teardown(nextSkip)
 		}
 	} else {
 		switch c {
@@ -179,7 +188,7 @@ func (p *player) handleRequest(r *geisha.Request) *geisha.Response {
 			res.Status = geisha.StatusOk
 			p.queue.insert(p.queue.curr, Song(r.Args[0]))
 			if p.stream != nil {
-				go p.stream.Teardown(1)
+				go p.stream.Teardown(nextSkip)
 			}
 		}
 
@@ -233,7 +242,7 @@ func (p *player) handleRequest(r *geisha.Request) *geisha.Response {
 				}
 			}
 			if should_skip && p.stream != nil {
-				go p.stream.Teardown(2)
+				go p.stream.Teardown(nextNoop)
 			}
 			res.Status = geisha.StatusOk
 			p.play()
