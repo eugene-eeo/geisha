@@ -32,6 +32,7 @@ func (q *queue) len() int {
 }
 
 func (q *queue) current() Song {
+	// need this line in case loop-mode changes in between calls to current() and next()
 	q.next(0, false)
 	if 0 <= q.curr && q.curr < len(q.q) {
 		return q.q[q.curr]
@@ -41,14 +42,11 @@ func (q *queue) current() Song {
 
 func (q *queue) next(i int, force bool) {
 	n := len(q.q)
-	if n == 0 {
-		return
-	}
-	if !q.repeat || force {
+	if n > 0 && (!q.repeat || force) {
 		q.curr += i
-		// only mod if we are in loop mode or we are forced to.
-		// that way if q.curr goes out of bounds then we know we
-		// have to return empty songs (we've exhaused the queue).
+		// only mod if we are in loop mode or are forced to.
+		// so if q.curr goes out of bounds then we know we
+		// have exhaused the queue.
 		if q.loop || force {
 			q.curr = mod(q.curr, n)
 		}
