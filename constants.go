@@ -45,6 +45,7 @@ const (
 	MethodLoop
 	MethodRepeat
 	MethodClear
+	MethodRemove
 	MethodShutdown
 )
 

@@ -76,6 +76,7 @@ func (p *player) handleDone(i int) {
 		p.queue.next(1, true)
 	case 0:
 		p.queue.next(1, false)
+	case 2: // explicitly ignore 2
 	}
 	p.play()
 }
@@ -193,10 +194,12 @@ func (p *player) handleRequest(r *geisha.Request) *geisha.Response {
 
 	case geisha.MethodEnqueue:
 		res.Status = geisha.StatusErr
-		if len(r.Args) == 1 {
+		if len(r.Args) >= 1 {
 			p.broadcast(geisha.EventQueueChange)
 			res.Status = geisha.StatusOk
-			p.queue.append(Song(r.Args[0]))
+			for _, song := range r.Args {
+				p.queue.append(Song(song))
+			}
 			p.play()
 		}
 
@@ -217,6 +220,24 @@ func (p *player) handleRequest(r *geisha.Request) *geisha.Response {
 	case geisha.MethodShuffle:
 		p.broadcast(geisha.EventQueueChange)
 		p.queue.shuffle()
+
+	case geisha.MethodRemove:
+		res.Status = geisha.StatusErr
+		if len(r.Args) >= 1 {
+			should_skip := false
+			p.broadcast(geisha.EventQueueChange)
+			for _, song := range r.Args {
+				if idx := p.queue.find(Song(song)); idx >= 0 {
+					p.queue.remove(idx)
+					should_skip = should_skip || idx == p.queue.curr
+				}
+			}
+			if should_skip && p.stream != nil {
+				go p.stream.Teardown(2)
+			}
+			res.Status = geisha.StatusOk
+			p.play()
+		}
 
 	case geisha.MethodShutdown:
 		go func() { p.context.exit <- struct{}{} }()

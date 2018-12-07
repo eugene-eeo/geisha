@@ -42,11 +42,11 @@ func next(c *cli.Context, ipc *geisha.IPC) (*geisha.Response, error) {
 }
 
 func enqueue(c *cli.Context, ipc *geisha.IPC) (*geisha.Response, error) {
-	args := c.Args()
-	if len(args) < 1 {
-		return nil, fmt.Errorf("geishac: enqueue needs song")
-	}
-	return ipc.Request(geisha.MethodEnqueue, []string{args[0]})
+	return ipc.Request(geisha.MethodEnqueue, []string(c.Args()))
+}
+
+func remove(c *cli.Context, ipc *geisha.IPC) (*geisha.Response, error) {
+	return ipc.Request(geisha.MethodRemove, []string(c.Args()))
 }
 
 func get_state(c *cli.Context, ipc *geisha.IPC) (*geisha.Response, error) {
@@ -132,8 +132,13 @@ func main() {
 		},
 		{
 			Name:   "enqueue",
-			Usage:  "enqueue song",
+			Usage:  "enqueue song(s)",
 			Action: ipc(enqueue),
+		},
+		{
+			Name:   "remove",
+			Usage:  "remove song(s)",
+			Action: ipc(remove),
 		},
 		{
 			Name:   "resume",

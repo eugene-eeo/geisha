@@ -55,9 +55,18 @@ func (q *queue) next(i int, force bool) {
 	}
 }
 
+func (q *queue) find(x Song) int {
+	for i, c := range q.q {
+		if c == x {
+			return i
+		}
+	}
+	return -1
+}
+
 func (q *queue) remove(i int) {
 	// so that future calls to next(1) wraps around properly
-	if q.curr == len(q.q) {
+	if q.curr == len(q.q) || i < q.curr {
 		q.curr--
 	}
 	q.q = append(q.q[:i], q.q[i+1:]...)

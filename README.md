@@ -34,7 +34,7 @@ Long term plan would be to have a suite of tools including:
    - [x] `repeat`
    - [x] `loop`
  - [ ] stable queue shuffle + sort
- - [ ] `MethodRemove`
+ - [x] `MethodRemove`
  - [ ] more efficient streaming-friendly IPC (no json)
    - format idea:
      ```
