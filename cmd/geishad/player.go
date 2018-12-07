@@ -238,7 +238,9 @@ func (p *player) handleRequest(r *geisha.Request) *geisha.Response {
 			for _, song := range r.Args {
 				if idx := p.queue.find(Song(song)); idx >= 0 {
 					p.queue.remove(idx)
-					should_skip = should_skip || idx == p.queue.curr
+					if idx == p.queue.curr {
+						should_skip = true
+					}
 				}
 			}
 			if should_skip && p.stream != nil {
