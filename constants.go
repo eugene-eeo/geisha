@@ -67,3 +67,26 @@ const (
 	// Queue Change
 	EventQueueChange = Event("queue:change")
 )
+
+func CtrlToEvent(c Control) Event {
+	switch c {
+	case PAUSE:
+		return EventCtrlPause
+	case PLAY:
+		return EventCtrlPlay
+	case FWD:
+		return EventCtrlFwd
+	case BWD:
+		return EventCtrlBwd
+	case PREV:
+		return EventCtrlPrev
+	case SKIP:
+		return EventCtrlSkip
+	case STOP:
+		return EventCtrlStop
+	case TOGGLE:
+		return EventCtrlToggle
+	default:
+		return ""
+	}
+}

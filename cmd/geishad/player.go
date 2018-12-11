@@ -4,17 +4,6 @@ import "time"
 import "strconv"
 import "github.com/eugene-eeo/geisha"
 
-var CTRL_EVENT_MAP = map[geisha.Control]geisha.Event{
-	geisha.PAUSE:  geisha.EventCtrlPause,
-	geisha.PLAY:   geisha.EventCtrlPlay,
-	geisha.FWD:    geisha.EventCtrlFwd,
-	geisha.BWD:    geisha.EventCtrlBwd,
-	geisha.PREV:   geisha.EventCtrlPrev,
-	geisha.SKIP:   geisha.EventCtrlSkip,
-	geisha.STOP:   geisha.EventCtrlStop,
-	geisha.TOGGLE: geisha.EventCtrlToggle,
-}
-
 type nextControl int
 
 const (
@@ -92,8 +81,7 @@ func (p *player) handleDone(i nextControl) {
 }
 
 func (p *player) broadcastControlEvent(c geisha.Control) {
-	ev, ok := CTRL_EVENT_MAP[c]
-	if ok {
+	if ev := geisha.CtrlToEvent(c); ev != "" {
 		p.broadcast(ev)
 	}
 }
