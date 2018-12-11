@@ -220,5 +220,6 @@ func main() {
 	err := app.Run(os.Args)
 	if err != nil {
 		_, _ = fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
 	}
 }
