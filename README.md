@@ -27,9 +27,9 @@ Long term plan would be to have a suite of tools including:
 ### Commands
 
  - `play <id>`
- - `next <song>`
- - `enqueue <song>`
- - `remove <id>`
+ - `next <song ...>`
+ - `enqueue <song ...>`
+ - `remove <id ...>`
  - `pause|resume|toggle|skip|prev|toggle|fwd|bwd`
  - `shuffle|sort|loop`
  - `get_queue`

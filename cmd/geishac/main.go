@@ -34,11 +34,7 @@ func play(c *cli.Context, ipc *geisha.IPC) (*geisha.Response, error) {
 }
 
 func next(c *cli.Context, ipc *geisha.IPC) (*geisha.Response, error) {
-	args := c.Args()
-	if len(args) < 1 {
-		return nil, fmt.Errorf("geishac: next needs song")
-	}
-	return ipc.Request(geisha.MethodNext, []string{args[0]})
+	return ipc.Request(geisha.MethodNext, []string(c.Args()))
 }
 
 func enqueue(c *cli.Context, ipc *geisha.IPC) (*geisha.Response, error) {

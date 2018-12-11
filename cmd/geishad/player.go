@@ -201,13 +201,11 @@ func (p *player) handleRequest(r *geisha.Request) *geisha.Response {
 		}
 
 	case geisha.MethodNext:
-		res.Status = geisha.StatusErr
-		if len(r.Args) == 1 {
-			p.broadcast(geisha.EventQueueChange)
-			res.Status = geisha.StatusOk
-			p.queue.insert(p.queue.curr, Song(r.Args[0]))
-			p.play()
+		p.broadcast(geisha.EventQueueChange)
+		for i, song := range r.Args {
+			p.queue.insert(p.queue.curr+i, Song(song))
 		}
+		p.play()
 
 	case geisha.MethodEnqueue:
 		p.broadcast(geisha.EventQueueChange)
