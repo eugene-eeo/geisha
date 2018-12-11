@@ -147,21 +147,19 @@ func (p *player) handleRequest(r *geisha.Request) *geisha.Response {
 
 	case geisha.MethodGetState:
 		paused := false
-		current := -1
-		path := Song("")
-		elapsed := time.Duration(0 * time.Second)
-		total := time.Duration(0 * time.Second)
+		current := &queueEntry{}
+		elapsed := time.Duration(0)
+		total := time.Duration(0)
 		if p.stream != nil {
 			paused = p.stream.Paused()
-			path = p.queue.current().Song
+			current = p.queue.current()
 			elapsed, total = p.stream.Progress()
-			current = p.queue.current().Id
 		}
 		res.Result = geisha.GetStateResponse{
 			Elapsed: int(elapsed.Seconds()),
 			Total:   int(total.Seconds()),
-			Current: current,
-			Path:    string(path),
+			Current: current.Id,
+			Path:    string(current.Song),
 			Paused:  paused,
 			Loop:    p.queue.loop,
 			Repeat:  p.queue.repeat,
@@ -172,10 +170,8 @@ func (p *player) handleRequest(r *geisha.Request) *geisha.Response {
 		if p.stream != nil {
 			curr = p.queue.curr
 		}
-		queue := make([]*queueEntry, p.queue.len())
-		copy(queue, p.queue.q)
 		res.Result = map[string]interface{}{
-			"queue": queue,
+			"queue": p.queue.q,
 			"curr":  curr,
 		}
 
@@ -184,9 +180,9 @@ func (p *player) handleRequest(r *geisha.Request) *geisha.Response {
 		if len(r.Args) == 1 {
 			id, err := strconv.Atoi(r.Args[0])
 			if err == nil {
-				p.broadcast(geisha.EventQueueChange)
-				res.Status = geisha.StatusOk
 				if idx := p.queue.find(id); idx >= 0 {
+					res.Status = geisha.StatusOk
+					p.broadcast(geisha.EventQueueChange)
 					p.queue.curr = idx
 					if p.stream != nil {
 						go p.stream.Teardown(nextNoop)
