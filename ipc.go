@@ -46,16 +46,51 @@ func (i *IPC) Subscribe(f func(Event) error) error {
 }
 
 func (i *IPC) Request(method Method, args []string) (*Response, error) {
-	res := &Response{}
+	var msg json.RawMessage
+	res := &Response{Result: &msg}
 	if method == MethodSubscribe {
-		return res, useSubscribeMethod
+		return nil, useSubscribeMethod
 	}
 	req := Request{Method: method, Args: args}
 	if err := i.w.Encode(req); err != nil {
-		return res, err
+		return nil, err
 	}
 	if err := i.r.Decode(res); err != nil {
-		return res, err
+		return nil, err
+	}
+	switch method {
+	case MethodGetState:
+		r := GetStateResponse{}
+		if err := json.Unmarshal(msg, &r); err != nil {
+			return nil, err
+		}
+		res.Result = r
+	case MethodGetQueue:
+		r := GetQueueResponse{}
+		if err := json.Unmarshal(msg, &r); err != nil {
+			return nil, err
+		}
+		res.Result = r
 	}
 	return res, nil
+}
+
+type GetStateResponse struct {
+	Elapsed int    `json:"elapsed"`
+	Total   int    `json:"total"`
+	Current int    `json:"current"`
+	Path    string `json:"path"`
+	Paused  bool   `json:"paused"`
+	Loop    bool   `json:"loop"`
+	Repeat  bool   `json:"repeat"`
+}
+
+type QueueEntry struct {
+	Id   int    `json:"id"`
+	Song string `json:"song"`
+}
+
+type GetQueueResponse struct {
+	Current int          `json:"current"`
+	Queue   []QueueEntry `json:"queue"`
 }

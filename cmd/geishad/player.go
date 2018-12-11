@@ -157,14 +157,14 @@ func (p *player) handleRequest(r *geisha.Request) *geisha.Response {
 			elapsed, total = p.stream.Progress()
 			current = p.queue.current().Id
 		}
-		res.Result = map[string]interface{}{
-			"paused":  paused,
-			"elapsed": int(elapsed.Seconds()),
-			"total":   int(total.Seconds()),
-			"current": current,
-			"path":    path,
-			"loop":    p.queue.loop,
-			"repeat":  p.queue.repeat,
+		res.Result = geisha.GetStateResponse{
+			Elapsed: int(elapsed.Seconds()),
+			Total:   int(total.Seconds()),
+			Current: current,
+			Path:    string(path),
+			Paused:  paused,
+			Loop:    p.queue.loop,
+			Repeat:  p.queue.repeat,
 		}
 
 	case geisha.MethodGetQueue:

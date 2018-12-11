@@ -54,14 +54,14 @@ func get_state(c *cli.Context, ipc *geisha.IPC) (*geisha.Response, error) {
 	if err != nil {
 		return res, err
 	}
-	x := res.Result.(map[string]interface{})
-	fmt.Println("path:\t", x["path"].(string))
-	fmt.Println("current:\t", x["current"].(float64))
-	fmt.Println("elapsed:\t", x["elapsed"].(float64))
-	fmt.Println("total:\t", x["total"].(float64))
-	fmt.Println("paused:\t", x["paused"].(bool))
-	fmt.Println("loop:\t", x["loop"].(bool))
-	fmt.Println("repeat:\t", x["repeat"].(bool))
+	x := res.Result.(geisha.GetStateResponse)
+	fmt.Println("path:\t", x.Path)
+	fmt.Println("current:\t", x.Current)
+	fmt.Println("elapsed:\t", x.Elapsed)
+	fmt.Println("total:\t", x.Total)
+	fmt.Println("paused:\t", x.Paused)
+	fmt.Println("loop:\t", x.Loop)
+	fmt.Println("repeat:\t", x.Repeat)
 	return res, nil
 }
 
@@ -70,16 +70,13 @@ func get_queue(c *cli.Context, ipc *geisha.IPC) (*geisha.Response, error) {
 	if err != nil {
 		return res, err
 	}
-	x := res.Result.(map[string]interface{})
-	i := int(x["curr"].(float64))
-	q := x["queue"].([]interface{})
-	for j, song := range q {
+	queue := res.Result.(geisha.GetQueueResponse)
+	for i, entry := range queue.Queue {
 		f := ""
-		if i == j {
+		if i == queue.Current {
 			f = "*"
 		}
-		entry := song.(map[string]interface{})
-		fmt.Printf("%s\t%d\t%s\n", f, int(entry["id"].(float64)), entry["song"].(string))
+		fmt.Printf("%s\t%d\t%s\n", f, entry.Id, entry.Song)
 	}
 	return res, err
 }
