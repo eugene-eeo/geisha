@@ -105,12 +105,13 @@ func (q *queue) append(x Song) {
 }
 
 func (q *queue) sort() {
+	curr := q.current()
 	sort.Slice(q.q, func(i, j int) bool {
 		swap := q.q[i].Id < q.q[j].Id
 		if swap {
-			if q.curr == i {
+			if curr == q.q[i] {
 				q.curr = j
-			} else if q.curr == j {
+			} else if curr == q.q[j] {
 				q.curr = i
 			}
 		}
