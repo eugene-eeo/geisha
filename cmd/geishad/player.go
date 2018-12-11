@@ -182,6 +182,7 @@ func (p *player) handleRequest(r *geisha.Request) *geisha.Response {
 					if p.stream != nil {
 						go p.stream.Teardown(nextNoop)
 					}
+					p.play()
 				}
 			}
 		}

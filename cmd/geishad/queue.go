@@ -56,7 +56,7 @@ func (q *queue) next(i int, force bool) {
 		// only mod if we are in loop mode or are forced to.
 		// so if q.curr goes out of bounds then we know we
 		// have exhaused the queue.
-		if q.loop || force {
+		if q.loop {
 			q.curr = mod(q.curr, n)
 		}
 	}
