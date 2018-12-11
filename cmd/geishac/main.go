@@ -62,6 +62,7 @@ func get_state(c *cli.Context, ipc *geisha.IPC) (*geisha.Response, error) {
 	fmt.Println("paused:\t", x.Paused)
 	fmt.Println("loop:\t", x.Loop)
 	fmt.Println("repeat:\t", x.Repeat)
+	fmt.Println("shuffled:\t", x.Shuffled)
 	return res, nil
 }
 
@@ -71,9 +72,9 @@ func get_queue(c *cli.Context, ipc *geisha.IPC) (*geisha.Response, error) {
 		return res, err
 	}
 	queue := res.Result.(geisha.GetQueueResponse)
-	for i, entry := range queue.Queue {
+	for _, entry := range queue.Queue {
 		f := ""
-		if i == queue.Current {
+		if entry.Id == queue.Current {
 			f = "*"
 		}
 		fmt.Printf("%s\t%d\t%s\n", f, entry.Id, entry.Song)

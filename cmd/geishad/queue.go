@@ -9,11 +9,12 @@ type queueEntry struct {
 }
 
 type queue struct {
-	loop   bool
-	repeat bool
-	curr   int
-	max_id int
-	q      []*queueEntry
+	shuffled bool
+	loop     bool
+	repeat   bool
+	curr     int
+	max_id   int
+	q        []*queueEntry
 }
 
 func mod(d, r int) int {
@@ -26,6 +27,7 @@ func mod(d, r int) int {
 
 func newQueue(loop, repeat bool) *queue {
 	return &queue{
+		false,
 		loop,
 		repeat,
 		0,
@@ -105,6 +107,7 @@ func (q *queue) append(x Song) {
 }
 
 func (q *queue) sort() {
+	q.shuffled = false
 	curr := q.current()
 	sort.Slice(q.q, func(i, j int) bool {
 		swap := q.q[i].Id < q.q[j].Id
@@ -120,11 +123,12 @@ func (q *queue) sort() {
 }
 
 func (q *queue) shuffle() {
+	q.shuffled = true
 	rand.Shuffle(len(q.q), func(i, j int) {
 		q.q[i], q.q[j] = q.q[j], q.q[i]
-		if i == q.curr {
+		if q.curr == i {
 			q.curr = j
-		} else if j == q.curr {
+		} else if q.curr == j {
 			q.curr = i
 		}
 	})

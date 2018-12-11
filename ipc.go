@@ -81,13 +81,14 @@ func convertResponseType(m Method, msg json.RawMessage, res *Response) error {
 }
 
 type GetStateResponse struct {
-	Elapsed int    `json:"elapsed"`
-	Total   int    `json:"total"`
-	Current int    `json:"current"`
-	Path    string `json:"path"`
-	Paused  bool   `json:"paused"`
-	Loop    bool   `json:"loop"`
-	Repeat  bool   `json:"repeat"`
+	Elapsed  int    `json:"elapsed"`
+	Total    int    `json:"total"`
+	Current  int    `json:"current"`
+	Path     string `json:"path"`
+	Paused   bool   `json:"paused"`
+	Loop     bool   `json:"loop"`
+	Repeat   bool   `json:"repeat"`
+	Shuffled bool   `json:"shuffled"`
 }
 
 type QueueEntry struct {

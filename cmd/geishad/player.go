@@ -81,12 +81,6 @@ func (p *player) handleDone(i nextControl) {
 	p.play()
 }
 
-func (p *player) broadcastControlEvent(c geisha.Control) {
-	if ev := geisha.CtrlToEvent(c); ev != "" {
-		p.broadcast(ev)
-	}
-}
-
 func (p *player) handleControl(c geisha.Control) {
 	if p.stream != nil {
 		switch c {
@@ -120,7 +114,7 @@ func (p *player) handleControl(c geisha.Control) {
 			p.play()
 		}
 	}
-	p.broadcastControlEvent(c)
+	p.broadcast(geisha.CtrlToEvent(c))
 }
 
 func (p *player) handleRequest(r *geisha.Request) *geisha.Response {
@@ -156,23 +150,24 @@ func (p *player) handleRequest(r *geisha.Request) *geisha.Response {
 			elapsed, total = p.stream.Progress()
 		}
 		res.Result = geisha.GetStateResponse{
-			Elapsed: int(elapsed.Seconds()),
-			Total:   int(total.Seconds()),
-			Current: current.Id,
-			Path:    string(current.Song),
-			Paused:  paused,
-			Loop:    p.queue.loop,
-			Repeat:  p.queue.repeat,
+			Elapsed:  int(elapsed.Seconds()),
+			Total:    int(total.Seconds()),
+			Current:  current.Id,
+			Path:     string(current.Song),
+			Paused:   paused,
+			Loop:     p.queue.loop,
+			Repeat:   p.queue.repeat,
+			Shuffled: p.queue.shuffled,
 		}
 
 	case geisha.MethodGetQueue:
 		curr := -1
 		if p.stream != nil {
-			curr = p.queue.curr
+			curr = p.queue.current().Id
 		}
 		res.Result = map[string]interface{}{
-			"queue": p.queue.q,
-			"curr":  curr,
+			"queue":   p.queue.q,
+			"current": curr,
 		}
 
 	case geisha.MethodPlaySong:
