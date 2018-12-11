@@ -30,7 +30,7 @@ Long term plan would be to have a suite of tools including:
  - `next <song ...>`
  - `enqueue <song ...>`
  - `remove <id ...>`
- - `pause|resume|toggle|skip|prev|toggle|fwd|bwd|stop`
+ - `pause|toggle|skip|prev|toggle|fwd|bwd|stop`
  - `shuffle|sort|loop|repeat`
  - `get_queue`
  - `get_state`

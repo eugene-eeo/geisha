@@ -145,11 +145,6 @@ func main() {
 			Action: ipc(remove),
 		},
 		{
-			Name:   "resume",
-			Usage:  "resume",
-			Action: ctrl(geisha.PLAY),
-		},
-		{
 			Name:   "pause",
 			Usage:  "pause",
 			Action: ctrl(geisha.PAUSE),
