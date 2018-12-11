@@ -140,6 +140,9 @@ func (p *player) handleRequest(r *geisha.Request) *geisha.Response {
 	case geisha.MethodClear:
 		p.queue = newQueue(p.queue.loop, p.queue.repeat)
 		p.broadcast(geisha.EventQueueChange)
+		if p.stream != nil {
+			go p.stream.Teardown(nextNoop)
+		}
 
 	case geisha.MethodGetState:
 		paused := false
