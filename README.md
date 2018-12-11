@@ -35,6 +35,7 @@ Long term plan would be to have a suite of tools including:
  - `get_queue`
  - `get_state`
  - `sub`
+ - `shutdown`
 
 
 ### TODO
