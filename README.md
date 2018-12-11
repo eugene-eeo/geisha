@@ -46,7 +46,7 @@ Long term plan would be to have a suite of tools including:
  - [x] playback modes:
    - [x] `repeat`
    - [x] `loop`
- - [ ] stable queue shuffle + sort
+ - [x] stable queue shuffle + sort
  - [x] `MethodRemove`
  - [ ] clean up `geishad` code
  - [ ] clean up `geishac` code (PLEASE)
