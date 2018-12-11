@@ -156,10 +156,12 @@ func (p *player) handleRequest(r *geisha.Request) *geisha.Response {
 	case geisha.MethodGetState:
 		paused := false
 		current := -1
+		path := Song("")
 		elapsed := time.Duration(0 * time.Second)
 		total := time.Duration(0 * time.Second)
 		if p.stream != nil {
 			paused = p.stream.Paused()
+			path = p.queue.current().Song
 			elapsed, total = p.stream.Progress()
 			current = p.queue.current().Id
 		}
@@ -168,6 +170,7 @@ func (p *player) handleRequest(r *geisha.Request) *geisha.Response {
 			"elapsed": int(elapsed.Seconds()),
 			"total":   int(total.Seconds()),
 			"current": current,
+			"path":    path,
 			"loop":    p.queue.loop,
 			"repeat":  p.queue.repeat,
 		}
@@ -203,7 +206,7 @@ func (p *player) handleRequest(r *geisha.Request) *geisha.Response {
 	case geisha.MethodNext:
 		p.broadcast(geisha.EventQueueChange)
 		for i, song := range r.Args {
-			p.queue.insert(p.queue.curr+i, Song(song))
+			p.queue.insert(p.queue.curr+1+i, Song(song))
 		}
 		p.play()
 
@@ -242,9 +245,7 @@ func (p *player) handleRequest(r *geisha.Request) *geisha.Response {
 				break
 			}
 			if idx := p.queue.find(id); idx >= 0 {
-				if idx == p.queue.curr {
-					should_skip = true
-				}
+				should_skip = should_skip || idx == p.queue.curr
 				p.queue.remove(idx)
 			}
 		}

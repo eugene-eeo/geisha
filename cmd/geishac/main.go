@@ -51,6 +51,7 @@ func get_state(c *cli.Context, ipc *geisha.IPC) (*geisha.Response, error) {
 		return res, err
 	}
 	x := res.Result.(map[string]interface{})
+	fmt.Println("path:\t", x["path"].(string))
 	fmt.Println("current:\t", x["current"].(float64))
 	fmt.Println("elapsed:\t", x["elapsed"].(float64))
 	fmt.Println("total:\t", x["total"].(float64))
