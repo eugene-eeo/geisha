@@ -45,6 +45,10 @@ func remove(c *cli.Context, ipc *geisha.IPC) (*geisha.Response, error) {
 	return ipc.Request(geisha.MethodRemove, []string(c.Args()))
 }
 
+func shutdown(c *cli.Context, ipc *geisha.IPC) (*geisha.Response, error) {
+	return ipc.Request(geisha.MethodShutdown, []string{})
+}
+
 func get_state(c *cli.Context, ipc *geisha.IPC) (*geisha.Response, error) {
 	res, err := ipc.Request(geisha.MethodGetState, nil)
 	if err != nil {
@@ -208,6 +212,11 @@ func main() {
 			Name:   "get_state",
 			Usage:  "get server state",
 			Action: ipc(get_state),
+		},
+		{
+			Name:   "shutdown",
+			Usage:  "kill daemon",
+			Action: ipc(shutdown),
 		},
 	}
 	sort.Sort(cli.CommandsByName(app.Commands))

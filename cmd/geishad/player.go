@@ -1,5 +1,6 @@
 package main
 
+import "os"
 import "time"
 import "strconv"
 import "github.com/eugene-eeo/geisha"
@@ -257,7 +258,7 @@ func (p *player) listen() {
 	for {
 		select {
 		case <-p.context.exit:
-			break
+			os.Exit(0)
 		case i := <-p.done:
 			p.handleDone(i)
 		case r := <-p.context.requests:
