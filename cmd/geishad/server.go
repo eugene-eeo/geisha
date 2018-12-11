@@ -12,29 +12,32 @@ type subscriber func(geisha.Event) error
 func handleConnection(p *player, conn net.Conn, subs chan subscriber) {
 	defer conn.Close()
 	conn.SetDeadline(time.Now().Add(time.Second * 2))
-	req := &geisha.Request{}
-	err := json.NewDecoder(conn).Decode(req)
-	if err != nil {
-		return
-	}
-	if req.Method == geisha.MethodSubscribe {
-		conn.SetDeadline(time.Time{})
-		done := make(chan struct{})
-		subs <- func(e geisha.Event) error {
-			x := append([]byte(e), '\n')
-			_, err := conn.Write(x)
-			if err != nil {
-				done <- struct{}{}
-			}
-			return err
-		}
-		<-done
-		return
-	} else {
-		p.context.requests <- req
-		res := <-p.context.response
-		if json.NewEncoder(conn).Encode(res) != nil {
+	decoder := json.NewDecoder(conn)
+	encoder := json.NewEncoder(conn)
+	for {
+		req := &geisha.Request{}
+		err := decoder.Decode(req)
+		if err != nil {
 			return
+		}
+		if req.Method == geisha.MethodSubscribe {
+			conn.SetDeadline(time.Time{})
+			done := make(chan struct{})
+			subs <- func(e geisha.Event) error {
+				x := append([]byte(e), '\n')
+				_, err := conn.Write(x)
+				if err != nil {
+					done <- struct{}{}
+				}
+				return err
+			}
+			<-done
+			return
+		} else {
+			p.context.requests <- req
+			if encoder.Encode(<-p.context.response) != nil {
+				return
+			}
 		}
 	}
 }
