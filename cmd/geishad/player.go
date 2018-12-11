@@ -202,15 +202,11 @@ func (p *player) handleRequest(r *geisha.Request) *geisha.Response {
 		}
 
 	case geisha.MethodEnqueue:
-		res.Status = geisha.StatusErr
-		if len(r.Args) >= 1 {
-			p.broadcast(geisha.EventQueueChange)
-			res.Status = geisha.StatusOk
-			for _, song := range r.Args {
-				p.queue.append(Song(song))
-			}
-			p.play()
+		p.broadcast(geisha.EventQueueChange)
+		for _, song := range r.Args {
+			p.queue.append(Song(song))
 		}
+		p.play()
 
 	case geisha.MethodRepeat:
 		p.broadcast(geisha.EventModeChange)
@@ -231,24 +227,23 @@ func (p *player) handleRequest(r *geisha.Request) *geisha.Response {
 		p.queue.shuffle()
 
 	case geisha.MethodRemove:
-		res.Status = geisha.StatusErr
-		if len(r.Args) >= 1 {
-			should_skip := false
-			p.broadcast(geisha.EventQueueChange)
-			for _, song := range r.Args {
-				if idx := p.queue.find(Song(song)); idx >= 0 {
-					p.queue.remove(idx)
-					if idx == p.queue.curr {
-						should_skip = true
-					}
+		should_skip := false
+		p.broadcast(geisha.EventQueueChange)
+		for _, song := range r.Args {
+			if idx := p.queue.find(Song(song)); idx >= 0 {
+				p.queue.remove(idx)
+				if idx == p.queue.curr {
+					should_skip = true
 				}
 			}
-			if should_skip && p.stream != nil {
-				go p.stream.Teardown(nextNoop)
-			}
-			res.Status = geisha.StatusOk
-			p.play()
 		}
+		// special case: if we have a currently playing stream
+		// and we removed it then p.queue.curr points to the
+		// correct song we should play.
+		if should_skip && p.stream != nil {
+			go p.stream.Teardown(nextNoop)
+		}
+		p.play()
 
 	case geisha.MethodShutdown:
 		go func() { p.context.exit <- struct{}{} }()
