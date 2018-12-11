@@ -27,8 +27,8 @@ func ipc(f func(*cli.Context, *geisha.IPC) (*geisha.Response, error)) func(c *cl
 
 func play(c *cli.Context, ipc *geisha.IPC) (*geisha.Response, error) {
 	args := c.Args()
-	if len(args) < 1 {
-		return nil, fmt.Errorf("geishac: play needs id")
+	if len(args) == 1 {
+		return nil, fmt.Errorf("geishac: play needs one id")
 	}
 	return ipc.Request(geisha.MethodPlaySong, []string{args[0]})
 }
@@ -46,7 +46,7 @@ func remove(c *cli.Context, ipc *geisha.IPC) (*geisha.Response, error) {
 }
 
 func shutdown(c *cli.Context, ipc *geisha.IPC) (*geisha.Response, error) {
-	return ipc.Request(geisha.MethodShutdown, []string{})
+	return ipc.Request(geisha.MethodShutdown, nil)
 }
 
 func get_state(c *cli.Context, ipc *geisha.IPC) (*geisha.Response, error) {
@@ -97,13 +97,13 @@ func ctrl(ct geisha.Control) func(*cli.Context) error {
 
 func sub(c *cli.Context) error {
 	ipc, err := geisha.NewDefaultIPC()
-	defer ipc.Close()
 	if err != nil {
 		return err
 	}
+	defer ipc.Close()
 	return ipc.Subscribe(func(evt geisha.Event) error {
-		fmt.Println(evt)
-		return nil
+		_, err := fmt.Println(evt)
+		return err
 	})
 }
 
@@ -219,6 +219,6 @@ func main() {
 	sort.Sort(cli.CommandsByName(app.Commands))
 	err := app.Run(os.Args)
 	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
+		_, _ = fmt.Fprintln(os.Stderr, err)
 	}
 }
