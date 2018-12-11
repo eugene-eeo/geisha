@@ -26,12 +26,12 @@ Long term plan would be to have a suite of tools including:
 
 ### Commands
 
- - `play <id>`
+ - `play [<id>]`
  - `next <song ...>`
  - `enqueue <song ...>`
  - `remove <id ...>`
  - `pause|resume|toggle|skip|prev|toggle|fwd|bwd|stop`
- - `shuffle|sort|loop`
+ - `shuffle|sort|loop|repeat`
  - `get_queue`
  - `get_state`
  - `sub`

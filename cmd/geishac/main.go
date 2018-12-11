@@ -27,7 +27,10 @@ func ipc(f func(*cli.Context, *geisha.IPC) (*geisha.Response, error)) func(c *cl
 
 func play(c *cli.Context, ipc *geisha.IPC) (*geisha.Response, error) {
 	args := c.Args()
-	if len(args) != 1 {
+	if len(args) == 0 {
+		return ipc.Request(geisha.MethodCtrl, []string{strconv.Itoa(int(geisha.PLAY))})
+	}
+	if len(args) > 1 {
 		return nil, fmt.Errorf("geishac: play needs one id")
 	}
 	return ipc.Request(geisha.MethodPlaySong, []string{args[0]})
