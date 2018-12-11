@@ -1,5 +1,6 @@
 package main
 
+import "time"
 import "strconv"
 import "github.com/eugene-eeo/geisha"
 
@@ -59,12 +60,12 @@ func (p *player) broadcast(ev geisha.Event) {
 
 func (p *player) play() {
 	for p.stream == nil {
-		song := p.queue.current()
-		if song == Song("") {
+		entry := p.queue.current()
+		if entry == nil {
 			break
 		}
 		// spin until we can play a song without any errors
-		s, err := play(song, p.done)
+		s, err := play(entry.Song, p.done)
 		if err != nil {
 			p.queue.remove(p.queue.curr)
 			continue
@@ -154,19 +155,21 @@ func (p *player) handleRequest(r *geisha.Request) *geisha.Response {
 
 	case geisha.MethodGetState:
 		paused := false
-		current := Song("")
-		progress := 0.0
+		current := -1
+		elapsed := time.Duration(0 * time.Second)
+		total := time.Duration(0 * time.Second)
 		if p.stream != nil {
 			paused = p.stream.Paused()
-			progress = p.stream.Progress()
-			current = p.queue.current()
+			elapsed, total = p.stream.Progress()
+			current = p.queue.current().Id
 		}
 		res.Result = map[string]interface{}{
-			"paused":   paused,
-			"progress": progress,
-			"current":  current,
-			"loop":     p.queue.loop,
-			"repeat":   p.queue.repeat,
+			"paused":  paused,
+			"elapsed": int(elapsed.Seconds()),
+			"total":   int(total.Seconds()),
+			"current": current,
+			"loop":    p.queue.loop,
+			"repeat":  p.queue.repeat,
 		}
 
 	case geisha.MethodGetQueue:
@@ -174,7 +177,7 @@ func (p *player) handleRequest(r *geisha.Request) *geisha.Response {
 		if p.stream != nil {
 			curr = p.queue.curr
 		}
-		queue := make([]Song, p.queue.len())
+		queue := make([]*queueEntry, p.queue.len())
 		copy(queue, p.queue.q)
 		res.Result = map[string]interface{}{
 			"queue": queue,
@@ -184,11 +187,16 @@ func (p *player) handleRequest(r *geisha.Request) *geisha.Response {
 	case geisha.MethodPlaySong:
 		res.Status = geisha.StatusErr
 		if len(r.Args) == 1 {
-			p.broadcast(geisha.EventQueueChange)
-			res.Status = geisha.StatusOk
-			p.queue.insert(p.queue.curr, Song(r.Args[0]))
-			if p.stream != nil {
-				go p.stream.Teardown(nextSkip)
+			id, err := strconv.Atoi(r.Args[0])
+			if err == nil {
+				p.broadcast(geisha.EventQueueChange)
+				res.Status = geisha.StatusOk
+				if idx := p.queue.find(id); idx >= 0 {
+					p.queue.curr = idx
+					if p.stream != nil {
+						go p.stream.Teardown(nextNoop)
+					}
+				}
 			}
 		}
 
@@ -229,12 +237,17 @@ func (p *player) handleRequest(r *geisha.Request) *geisha.Response {
 	case geisha.MethodRemove:
 		should_skip := false
 		p.broadcast(geisha.EventQueueChange)
-		for _, song := range r.Args {
-			if idx := p.queue.find(Song(song)); idx >= 0 {
-				p.queue.remove(idx)
+		for _, sid := range r.Args {
+			id, err := strconv.Atoi(sid)
+			if err != nil {
+				res.Status = geisha.StatusErr
+				break
+			}
+			if idx := p.queue.find(id); idx >= 0 {
 				if idx == p.queue.curr {
 					should_skip = true
 				}
+				p.queue.remove(idx)
 			}
 		}
 		// special case: if we have a currently playing stream
@@ -243,7 +256,6 @@ func (p *player) handleRequest(r *geisha.Request) *geisha.Response {
 		if should_skip && p.stream != nil {
 			go p.stream.Teardown(nextNoop)
 		}
-		p.play()
 
 	case geisha.MethodShutdown:
 		go func() { p.context.exit <- struct{}{} }()

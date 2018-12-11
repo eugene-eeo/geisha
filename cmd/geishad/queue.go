@@ -3,11 +3,17 @@ package main
 import "sort"
 import "math/rand"
 
+type queueEntry struct {
+	Id   int  `json:"id"`
+	Song Song `json:"song"`
+}
+
 type queue struct {
 	loop   bool
 	repeat bool
 	curr   int
-	q      []Song
+	max_id int
+	q      []*queueEntry
 }
 
 func mod(d, r int) int {
@@ -23,7 +29,8 @@ func newQueue(loop, repeat bool) *queue {
 		loop,
 		repeat,
 		0,
-		[]Song{},
+		0,
+		[]*queueEntry{},
 	}
 }
 
@@ -31,13 +38,13 @@ func (q *queue) len() int {
 	return len(q.q)
 }
 
-func (q *queue) current() Song {
+func (q *queue) current() *queueEntry {
 	// need this line in case loop-mode changes in between calls to current() and next()
 	q.next(0, false)
 	if 0 <= q.curr && q.curr < len(q.q) {
 		return q.q[q.curr]
 	}
-	return Song("")
+	return nil
 }
 
 func (q *queue) next(i int, force bool) {
@@ -53,9 +60,9 @@ func (q *queue) next(i int, force bool) {
 	}
 }
 
-func (q *queue) find(x Song) int {
+func (q *queue) find(x int) int {
 	for i, c := range q.q {
-		if c == x {
+		if c.Id == x {
 			return i
 		}
 	}
@@ -72,24 +79,34 @@ func (q *queue) remove(i int) {
 
 func (q *queue) insert(i int, x Song) {
 	if len(q.q) == 0 {
-		q.q = append(q.q, x)
+		q.append(x)
 		return
 	}
-	q.q = append(q.q, Song(""))
+	q.max_id++
+	entry := &queueEntry{
+		Song: x,
+		Id:   q.max_id,
+	}
+	q.q = append(q.q, nil)
 	copy(q.q[i+1:], q.q[i:])
-	q.q[i] = x
+	q.q[i] = entry
 	if i < q.curr {
 		q.curr++
 	}
 }
 
 func (q *queue) append(x Song) {
-	q.q = append(q.q, x)
+	q.max_id++
+	entry := &queueEntry{
+		Song: x,
+		Id:   q.max_id,
+	}
+	q.q = append(q.q, entry)
 }
 
 func (q *queue) sort() {
 	sort.Slice(q.q, func(i, j int) bool {
-		swap := q.q[i] < q.q[j]
+		swap := q.q[i].Id < q.q[j].Id
 		if swap {
 			if q.curr == i {
 				q.curr = j

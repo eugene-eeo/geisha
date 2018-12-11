@@ -31,7 +31,7 @@ func play(song Song, done chan nextControl) (*Stream, error) {
 	if err != nil {
 		return nil, err
 	}
-	ss := newStream(stream, func(i nextControl) {
+	ss := newStream(stream, format, func(i nextControl) {
 		_ = f.Close()
 		_ = stream.Close()
 		done <- i

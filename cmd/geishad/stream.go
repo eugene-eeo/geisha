@@ -1,18 +1,21 @@
 package main
 
+import "time"
 import "github.com/faiface/beep"
 import "github.com/faiface/beep/speaker"
 
 type Stream struct {
+	format  beep.Format
 	stream  beep.StreamSeeker
 	stopped bool
 	ctrl    *beep.Ctrl
 	stop    func(nextControl)
 }
 
-func newStream(s beep.StreamSeeker, stop func(nextControl)) *Stream {
+func newStream(s beep.StreamSeeker, format beep.Format, stop func(nextControl)) *Stream {
 	ctrl := &beep.Ctrl{Streamer: s}
 	return &Stream{
+		format:  format,
 		stream:  s,
 		stopped: false,
 		ctrl:    ctrl,
@@ -65,10 +68,10 @@ func (s *Stream) SeekRaw(i int) {
 	speaker.Unlock()
 }
 
-func (s *Stream) Progress() float64 {
+func (s *Stream) Progress() (time.Duration, time.Duration) {
 	speaker.Lock()
 	defer speaker.Unlock()
-	return float64(s.stream.Position()) / float64(s.stream.Len())
+	return s.format.SampleRate.D(s.stream.Position()), s.format.SampleRate.D(s.stream.Len())
 }
 
 func (s *Stream) Teardown(b nextControl) {

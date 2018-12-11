@@ -24,6 +24,19 @@ Long term plan would be to have a suite of tools including:
  - [ ] `geisha-albumart` extract album art from currently playing tracks
 
 
+### Commands
+
+ - `play <id>`
+ - `next <song>`
+ - `enqueue <song>`
+ - `remove <id>`
+ - `pause|resume|toggle|skip|prev|toggle|fwd|bwd`
+ - `shuffle|sort|loop`
+ - `get_queue`
+ - `get_state`
+ - `sub`
+
+
 ### TODO
 
  - [x] `geishac`
@@ -35,15 +48,6 @@ Long term plan would be to have a suite of tools including:
    - [x] `loop`
  - [ ] stable queue shuffle + sort
  - [x] `MethodRemove`
- - [ ] more efficient streaming-friendly IPC (no json)
-   - format idea:
-     ```
-     M{method-id}
-     A{arg}
-     A{arg}
-     E
-     ```
- - [ ] event details
  - [ ] clean up `geishad` code
  - [ ] clean up `geishac` code (PLEASE)
  - [ ] check for memory leaks
