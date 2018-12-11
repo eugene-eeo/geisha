@@ -42,7 +42,7 @@ func (i *IPC) Subscribe(f func(Event) error) error {
 			return err
 		}
 	}
-	return nil
+	return r.Err()
 }
 
 func (i *IPC) Request(method Method, args []string) (*Response, error) {
@@ -58,21 +58,26 @@ func (i *IPC) Request(method Method, args []string) (*Response, error) {
 	if err := i.r.Decode(res); err != nil {
 		return nil, err
 	}
-	switch method {
+	err := convertResponseType(method, msg, res)
+	return res, err
+}
+
+func convertResponseType(m Method, msg json.RawMessage, res *Response) error {
+	switch m {
 	case MethodGetState:
 		r := GetStateResponse{}
-		if err := json.Unmarshal(msg, &r); err != nil {
-			return nil, err
-		}
+		err := json.Unmarshal(msg, &r)
 		res.Result = r
+		return err
 	case MethodGetQueue:
 		r := GetQueueResponse{}
-		if err := json.Unmarshal(msg, &r); err != nil {
-			return nil, err
-		}
+		err := json.Unmarshal(msg, &r)
 		res.Result = r
+		return err
+	default:
+		res.Result = nil
+		return nil
 	}
-	return res, nil
 }
 
 type GetStateResponse struct {
