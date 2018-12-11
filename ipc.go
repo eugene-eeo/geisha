@@ -46,6 +46,7 @@ func (i *IPC) Subscribe(f func(Event) error) error {
 }
 
 func (i *IPC) Request(method Method, args []string) (*Response, error) {
+	defer i.Close()
 	var msg json.RawMessage
 	res := &Response{Result: &msg}
 	if method == MethodSubscribe {

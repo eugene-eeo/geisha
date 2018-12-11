@@ -18,7 +18,6 @@ func handleConnection(p *player, conn net.Conn, subs chan subscriber) {
 		return
 	}
 	if req.Method == geisha.MethodSubscribe {
-		// Once we are in subscribe mode, we should never leave subscribe mode.
 		conn.SetDeadline(time.Time{})
 		done := make(chan struct{})
 		subs <- func(e geisha.Event) error {
