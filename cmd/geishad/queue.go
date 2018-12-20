@@ -62,9 +62,9 @@ func (q *queue) next(i int, force bool) {
 	}
 }
 
-func (q *queue) find(x int) int {
+func (q *queue) find(id int) int {
 	for i, c := range q.q {
-		if c.Id == x {
+		if c.Id == id {
 			return i
 		}
 	}
@@ -72,7 +72,6 @@ func (q *queue) find(x int) int {
 }
 
 func (q *queue) remove(i int) {
-	// so that future calls to next(1) wraps around properly
 	if q.curr == len(q.q) || i < q.curr {
 		q.curr--
 	}

@@ -54,4 +54,5 @@ Long term plan would be to have a suite of tools including:
  - [ ] check for memory leaks
  - [ ] tests
    - [ ] hairy queue logic
+   - [ ] integration tests using bats
  - [ ] support playback for other filetypes
