@@ -54,7 +54,9 @@ func server(p *player) {
 				n := len(subs)
 				for i := n - 1; i >= 0; i-- {
 					if subs[i](evt) != nil {
-						subs = append(subs[:i], subs[i+1:]...)
+						copy(subs[i:], subs[i+1:])
+						subs[len(subs)-1] = nil
+						subs = subs[:len(subs)-1]
 					}
 				}
 			}
