@@ -24,8 +24,7 @@ func handleConnection(p *player, conn net.Conn, subs chan subscriber) {
 			conn.SetDeadline(time.Time{})
 			done := make(chan struct{})
 			subs <- func(e geisha.Event) error {
-				x := append([]byte(e), '\n')
-				_, err := conn.Write(x)
+				_, err := conn.Write(append([]byte(e), '\n'))
 				if err != nil {
 					done <- struct{}{}
 				}
@@ -35,9 +34,8 @@ func handleConnection(p *player, conn net.Conn, subs chan subscriber) {
 			return
 		} else {
 			p.context.requests <- req
-			if encoder.Encode(<-p.context.response) != nil {
-				return
-			}
+			encoder.Encode(<-p.context.response)
+			return
 		}
 	}
 }
